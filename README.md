@@ -1,4 +1,4 @@
-# Sample Simulator for Gamelift Flexmatch Matchmaking
+# Sample Simulator for AWS Gamelift Flexmatch Matchmaking
 
 ## Project Introduction
 
