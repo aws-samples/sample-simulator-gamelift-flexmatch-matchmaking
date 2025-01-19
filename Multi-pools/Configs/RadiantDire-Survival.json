@@ -1,0 +1,86 @@
+{
+  "name": "Radiant_vs_Dire_Survival",
+  "ruleLanguageVersion": "1.0",
+  "playerAttributes": [{
+      "name": "skill",
+      "type": "number",
+      "default": 10
+  },
+  {
+      "name": "GameMode",
+      "type": "string_list",
+      "default": [ "Survival" ]
+  }],
+  "algorithm": {
+      "batchingPreference": "sorted",
+      "sortByAttributes": ["skill"],
+      "expansionAgeSelection": "oldest",
+      "strategy": "exhaustiveSearch"
+  },
+  "teams": [{
+      "name": "Radiant",
+      "maxPlayers": 3,
+      "minPlayers": 1
+  }, {
+      "name": "Dire",
+      "maxPlayers": 3,
+      "minPlayers": 1
+  }],
+  "rules": [{
+      "name": "EqualTeamSizes",
+      "description": "Only launch a game when the number of players in each team matches, e.g. 4v4, 5v5, 6v6, 7v7, 8v8",
+      "type": "comparison",
+      "measurements": [ "count(teams[Radiant].players)" ],
+      "referenceValue": "count(teams[Dire].players)",
+      "operation": "=" 
+  },
+  {
+      "name": "FastConnection",
+      "description": "Prefer matches with fast player connections first",
+      "type": "latency",
+      "maxLatency": 80
+  },
+  {
+      "name": "Survival-Mode",
+      "description": "Check if it is a survival mode",
+      "type": "collection",
+      "operation": "contains",
+      "measurements": "flatten(teams[*].players.attributes[GameMode])",
+      "referenceValue": "Survival",
+      "minCount": 2,
+      "maxCount": 6
+  },
+  {
+      "name": "FairTeamSkill-Survival",
+      "description": "The average skill of players in each team is within 10 points from the average skill of all players in the match",
+      "type": "distance",
+      "measurements": [ "avg(teams[*].players.attributes[skill])" ],
+      "referenceValue": "avg(flatten(teams[*].players.attributes[skill]))",
+      "maxDistance": 20 
+  }],
+  "expansions": [
+  {
+      "target": "rules[FairTeamSkill-Survival].maxDistance",
+      "steps": [{
+          "waitTimeSeconds": 20,
+          "value": 200
+      }, {
+          "waitTimeSeconds": 40,
+          "value": 1000
+      }]
+  },
+  {
+      "target": "rules[FastConnection].maxLatency",
+      "steps": [
+          {
+              "waitTimeSeconds": 30,
+              "value": 120
+          },
+          {
+              "waitTimeSeconds": 120,
+              "value": 2000
+          }
+      ]
+  }
+]
+}

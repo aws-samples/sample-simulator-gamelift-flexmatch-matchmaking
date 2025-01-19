@@ -1,0 +1,20 @@
+# AWS SDK for Python
+boto3==1.26.0
+
+# Numerical computing library
+numpy==1.23.5
+
+# Additional dependencies that might be useful
+# Uncomment if needed for your specific use case
+
+# For advanced data manipulation and analysis
+# pandas==1.5.3
+
+# For creating plots and visualizations
+# matplotlib==3.7.1
+
+# For more advanced statistical functions
+# scipy==1.10.1
+
+# For creating and manipulating dates and times (if not using standard library)
+# python-dateutil==2.8.2
