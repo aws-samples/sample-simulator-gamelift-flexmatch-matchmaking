@@ -22,8 +22,8 @@ Key features:
 
 1. Clone the repository:
    ```
-   git clone https://github.com/your-repo/aws-gamelift-tools.git
-   cd aws-gamelift-tools
+   git clone https://github.com/aws-samples/sample-simulator-gamelift-flexmatch-matchmaking.git
+   cd sample-simulator-gamelift-flexmatch-matchmaking
    ```
 
 2. Install dependencies:
