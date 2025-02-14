@@ -1,0 +1,56 @@
+import json, os, random, time
+import string
+import uuid
+import boto3
+import numpy as np
+
+def generate_scores(num_players, median=1000, std_dev=400):
+    scores = np.random.normal(loc=median, scale=std_dev, size=num_players)
+    scores = [max(1, int(score)) for score in scores]
+    return scores
+
+def generate_random_string(length):
+    characters = string.ascii_letters + string.digits
+    random_string = ''.join(random.choice(characters) for _ in range(length))
+    return random_string
+
+class Player:
+    def __init__(self):
+        self.PlayerId = ''
+        self.PlayerAttributes = {}
+        self.LatencyInMs = {}
+
+    def _get_game_modes(self, machmakingConfigurationName):
+      """Determine game modes based on configuration name"""
+      sleepRandomTimeLower = 1
+      sleepRandomTimeUpper = 3
+      gameModes = []
+      if "All" in machmakingConfigurationName:
+          randomSize = random.randint(1, len(self.gameModes))
+          gameModes = random.sample(self.gameModes, randomSize)
+      elif any(mode in machmakingConfigurationName for mode in ["Classic", "Practice", "Survival"]):
+          sleepRandomTimeLower *= 2
+          sleepRandomTimeUpper *= 2
+          gameModes = [next(mode for mode in ["Classic", "Practice", "Survival"] 
+                      if mode in machmakingConfigurationName)]
+      return gameModes, sleepRandomTimeLower, sleepRandomTimeUpper
+
+    def mock(self, attrs):
+        self.PlayerId = "player-" + str(random.randint(1000000, 9999999))
+        latency = random.sample(attrs['latency'], 1)[0]
+        self.LatencyInMs = {
+          "us-east-1": latency
+        }
+        self.PlayerAttributes = {}
+        if isinstance(attrs, dict):
+            for attr, value in attrs.items():
+                if attr != "latency":
+                    self.PlayerAttributes[attr] = {
+                        'N' : random.sample(value, 1)[0]
+                    }
+
+        return {
+            "PlayerId": self.PlayerId,
+            "PlayerAttributes": self.PlayerAttributes,
+            "LatencyInMs": self.LatencyInMs
+        }

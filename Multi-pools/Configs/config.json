@@ -25,7 +25,7 @@
   "benchmark":{
     "ticketPrefix": "benxiwan-",
     "logs": "output.txt",
-    "totalPlayers": 300,
+    "totalPlayers": 10,
     "gameModes": [ "Classic", "Practice", "Survival" ],
     "acceptance": {
       "rate": 1,
@@ -41,10 +41,10 @@
         "std_dev": 20
       },
       "skill": {
-        "median": 1000,
+        "median": 2000,
         "std_dev": 400
       },
-      "gameModes":{
+      "GameMode":{
         
       }
     }

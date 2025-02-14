@@ -34,7 +34,7 @@ import uuid
 import boto3
 import numpy as np
 import threading
-
+from .player import Player
 
 def generate_random_string(length):
     characters = string.ascii_letters + string.digits
@@ -249,13 +249,22 @@ class RealTicket():
       return gameModes, sleepRandomTimeLower, sleepRandomTimeUpper
 
   def mockPlayers(self, num_players):
-    self.latency = self.playerData['latency']
-    self.skill = self.playerData['skill']
-    mrr_vals = generate_scores(num_players, self.skill['median'],  self.skill['std_dev'])
-    lty_vals = generate_scores(num_players, self.latency['median'], self.latency['std_dev'])
+    attrs = {}
+    for attr, value in self.playerData.items():
+      # if median and std_dev are in value's property
+      if 'median' in value and 'std_dev' in value:
+        vals = generate_scores(num_players, value['median'],  value['std_dev'])
+        attrs[attr] = vals
+
+    # self.latency = self.playerData['latency']
+    # self.skill = self.playerData['skill']
+    # mrr_vals = generate_scores(num_players, self.skill['median'],  self.skill['std_dev'])
+    # lty_vals = generate_scores(num_players, self.latency['median'], self.latency['std_dev'])
 
     for i in range(num_players):
-      self.players.append(self.mockPlayer(mrr_vals, lty_vals))
+      self.players.append(Player().mock(attrs))
+      pass
+      #self.players.append(self.mockPlayer(mrr_vals, lty_vals))
 
   def _parseConfig(self, benchmark):
     self.totalPlayers = benchmark['totalPlayers']
