@@ -14,6 +14,7 @@ import numpy as np
 import threading
 
 from datetime import datetime
+from pprint import pprint
 from .player import Player
 from .helpers import *
 
@@ -220,7 +221,8 @@ class RealTicket():
       gameModes, _, _ = self._get_game_modes()
       sample_player['PlayerAttributes']['GameMode'] = {'SL' : gameModes}
 
-    print(f"{self.machmakingConfigurationName} {self.players}")
+    print(self.machmakingConfigurationName)
+    print(self.players)
 
   def startMatchmaking(self, gamelift, benchmark):
     self.gamelift = gamelift

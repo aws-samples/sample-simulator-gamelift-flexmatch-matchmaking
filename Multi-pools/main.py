@@ -1,43 +1,64 @@
+
+"""
+This module is the main entry point for the application.
+
+Functions:
+    help():
+        Prints the usage instructions and available options.
+
+Main Logic:
+    The main program logic parses the command-line arguments and executes the corresponding operations based on the provided options.
+    Available options:
+        -help: Show the usage instructions.
+        -print: Output the JSON configuration data.
+        -ruleset: Create or update matchmaking configurations and rulesets.
+        -sample: Generate a sample player JSON.
+        -benchmark: Start a matchmaking benchmark.
+"""
+
 from cmd_parser import cmd_parser
 from ticket.helpers import read_json_file
+from pprint import pprint
 
 import sys,json,os
 
-# 检查是否有传递参数
+def help():
+    print("Usage: main.py [options] [arguments]")
+    print("Options:")
+    print("\t-help: Show this help message")
+    print("\t-print: output json of all configurations")
+    print("\t-ruleset: Create configuration if not exist and Update configuration rulesets")
+    print("\t-sample: sample json of a player")
+    print("\t-benchmark: Start a benchmark")
+
+# Check if arguments are provided
 if len(sys.argv) > 1:
-    # 遍历所有参数
+    # Loop through all arguments
     for arg in sys.argv[1:]:
-        # 检查参数是否以 "-" 开头,表示是一个选项
+        # Check if argument starts with "-", indicating it's an option
         if arg.startswith("-"):
-            # 获取选项名称,去掉前缀 "-"
+            # Get option name by removing "-" prefix
             option = arg[1:]
             configJson = read_json_file(f"{os.getcwd()}/Multi-pools/Configs/config.json")
 
-            # 根据选项名称执行相应操作
+            # Execute corresponding operation based on option name
             if option == "help":
-                print("Usage: main.py [options] [arguments]")
-                print("Options:")
-                print("\t-help: Show this help message")
-                print("\t-json: output json config")
-                print("\t-sample: sample json of a player")
-                print("\t-flexmatch: Update flexmatch sets")
-                print("\t-benchmark: Start a benchmark")
-            elif option == "json":
+                help()
+            elif option == "print":
                 if configJson is not None:
-                    print(configJson['flexmatch'])
-                    print(configJson['benchmark'])
+                    pprint(configJson)
                 pass
-            elif option == "flexmatch":
+            elif option == "ruleset":
                 if configJson is not None:
-                    cmd_parser(None, configJson)
+                    cmd_parser(option, configJson)
             elif option == "sample":
-                cmd_parser('sample', configJson)
+                cmd_parser(option, configJson)
             elif option == "benchmark":
-                cmd_parser('benchmark', configJson)
+                cmd_parser(option, configJson)
             else:
                 print(f"Unknown option: {arg}")
+                help()
         else:
-            # 处理非选项参数
             print(f"Argument: {arg}")
 else:
     print("No arguments provided.")
