@@ -33,17 +33,6 @@ Key features:
 
 ## Configuration
 
-### Setting up Matchmaking Configurations
-
-Before using this tool, you need to create matchmaking configurations in the AWS GameLift console:
-
-1. Log in to the AWS console and navigate to the GameLift service.
-2. In the left navigation bar, select "Matchmaking" > "Matchmaking configurations".
-3. Click "Create configuration".
-4. Fill in the configuration name (e.g., "Radiant-Dire-All"), ensuring it matches the name in config.json.
-5. Set up the rule set, queue, and other necessary parameters.
-6. Repeat steps 3-5 to create all required matchmaking configurations (Classic, Practice, Survival, etc.).
-
 ### Configuration File
 
 Open and edit the `Multi-pools/Configs/config.json` file. The file structure is as follows:
@@ -118,11 +107,11 @@ Run `main.py` in the `Multi-pools` directory with the following command-line opt
 python main.py [options]
 
 Options:
-  -help       Display help information
-  -json       Output JSON configuration
-  -sample    sample json of a player
-  -flexmatch  Update FlexMatch settings
-  -benchmark  Start benchmark testing
+  -help: Show this help message
+  -print: output json of all configurations
+  -ruleset: Create configuration if not exist and Update configuration rulesets
+  -sample: sample json of a player
+  -benchmark: Start a benchmark
 ```
 
 Examples:
@@ -133,7 +122,7 @@ Examples:
 
 2. Update FlexMatch settings:
    ```
-   python main.py -flexmatch
+   python main.py -ruleset
    ```
 
 3. Run benchmark test:
