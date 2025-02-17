@@ -3,16 +3,7 @@ import string
 import uuid
 import boto3
 import numpy as np
-
-def generate_scores(num_players, median=1000, std_dev=400):
-    scores = np.random.normal(loc=median, scale=std_dev, size=num_players)
-    scores = [max(1, int(score)) for score in scores]
-    return scores
-
-def generate_random_string(length):
-    characters = string.ascii_letters + string.digits
-    random_string = ''.join(random.choice(characters) for _ in range(length))
-    return random_string
+from .helpers import *
 
 class Player:
     def __init__(self):

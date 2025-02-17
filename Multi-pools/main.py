@@ -1,7 +1,7 @@
-from lambda_function import lambda_handler,read_json_file
+from cmd_parser import cmd_parser
+from ticket.helpers import read_json_file
+
 import sys,json,os
-
-
 
 # 检查是否有传递参数
 if len(sys.argv) > 1:
@@ -29,11 +29,11 @@ if len(sys.argv) > 1:
                 pass
             elif option == "flexmatch":
                 if configJson is not None:
-                    lambda_handler(None, configJson)
+                    cmd_parser(None, configJson)
             elif option == "sample":
-                lambda_handler('sample', configJson)
+                cmd_parser('sample', configJson)
             elif option == "benchmark":
-                lambda_handler('benchmark', configJson)
+                cmd_parser('benchmark', configJson)
             else:
                 print(f"Unknown option: {arg}")
         else:

@@ -14,23 +14,9 @@ import json, os, time, random
 import boto3
 
 from ticket import main_ticket
+from ticket.helpers import read_json_file
 
-def read_json_file(file_path):
-  try:
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"Ruleset file not found: {file_path}")
-            
-    with open(file_path, 'r', encoding='utf-8') as file:
-      return json.load(file)
-  except FileNotFoundError:
-    print(f"文件 '{file_path}' 不存在")
-  except json.JSONDecodeError:
-    print(f"文件 '{file_path}' 不是有效的 JSON 文件")
-  except Exception as e:
-    print(f"发生错误: {e}")
-  return None
-
-def lambda_handler(event, context):
+def cmd_parser(event, context):
 
     gamelift = boto3.client('gamelift', region_name=context['aws']['region'])
 

@@ -1,32 +1,10 @@
-"""
-AWS GameLift Matchmaking Ticket Handler
-AWS GameLift 匹配票据处理系统
+# RealTicket class handles AWS GameLift matchmaking tickets by:
+# - Creating and managing matchmaking tickets
+# - Simulating player acceptance behavior
+# - Monitoring ticket status (completed/failed/pending)
+# - Collecting match statistics and timing data
+# - Supporting concurrent matchmaking requests
 
-This module implements a real-time matchmaking ticket system for AWS GameLift, supporting multiple game modes
-and flexible player configurations.
-本模块实现了一个AWS GameLift实时匹配票据系统，支持多种游戏模式和灵活的玩家配置。
-
-Key features 主要特性:
-- Supports multiple game modes (支持多种游戏模式): Classic经典, Practice练习, Survival生存
-- Handles dynamic player grouping with configurable team sizes (处理动态玩家分组，可配置队伍大小)
-- Implements matchmaking monitoring with real-time status updates (实现实时状态更新的匹配监控)
-- Manages player attributes including skill ratings and latency (管理玩家属性，包括技能评级和延迟)
-- Provides detailed matchmaking statistics and logging (提供详细的匹配统计和日志记录)
-
-Main Components 主要组件:
-- RealTicket: Core class managing matchmaking tickets and player groups
-  核心类，管理匹配票据和玩家组
-- Player Generation: Creates mock players with realistic skill distributions
-  玩家生成：创建具有真实技能分布的模拟玩家
-- Monitoring System: Tracks ticket status and completion rates
-  监控系统：跟踪票据状态和完成率
-- Batch Processing: Handles player groups in configurable batch sizes
-  批处理：以可配置的批次大小处理玩家组
-
-Dependencies 依赖: boto3, numpy, datetime, threading
-"""
-
-from datetime import datetime
 
 import json, os, random, time
 import string
@@ -34,50 +12,10 @@ import uuid
 import boto3
 import numpy as np
 import threading
+
+from datetime import datetime
 from .player import Player
-
-def generate_random_string(length):
-    characters = string.ascii_letters + string.digits
-    random_string = ''.join(random.choice(characters) for _ in range(length))
-    return random_string
-
-def split_array(arr, team_size):
-    # print(f"split_array: {team_size}")
-    if len(arr) <= 4:
-        return [arr]
-    result = []
-    i = 0
-    while i < len(arr):
-        sub_len = random.randint(1, team_size)
-        sub_len = min(sub_len, len(arr) - i)
-        result.append(arr[i:i+sub_len])
-        i += sub_len
-    return result
-
-def format_elapsed_time(seconds):
-  hours = seconds // 3600
-  minutes = (seconds % 3600) // 60
-  seconds = seconds % 60
-  if hours > 0:
-      return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-  return f"{minutes:02d}:{seconds:02d}"
-
-def calculate_elapsed_time(start_time, end_time):
-  # Convert to datetime if they're strings
-  if isinstance(start_time, str):
-    start_time = datetime.fromisoformat(start_time)
-  if isinstance(end_time, str):
-    end_time = datetime.fromisoformat(end_time)
-  
-  # Calculate the time difference
-  elapsed = end_time - start_time
-  # Get elapsed time in different units
-  return elapsed.total_seconds()
-
-def generate_scores(num_players, median=1000, std_dev=400):
-    scores = np.random.normal(loc=median, scale=std_dev, size=num_players)
-    scores = [max(1, int(score)) for score in scores]
-    return scores
+from .helpers import *
 
 class RealTicket():
 
