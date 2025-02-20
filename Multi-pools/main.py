@@ -40,23 +40,17 @@ if len(sys.argv) > 1:
             # Get option name by removing "-" prefix
             option = arg[1:]
             configJson = read_json_file(f"{os.getcwd()}/Multi-pools/Configs/config.json")
-
+            if configJson is None:
+                print("No config.json found.")
+                exit -1
             # Execute corresponding operation based on option name
-            if option == "help":
-                help()
-            elif option == "print":
-                if configJson is not None:
-                    pprint(configJson)
+            if option == "print":
+                pprint(configJson)
                 pass
-            elif option == "ruleset":
-                if configJson is not None:
-                    cmd_parser(option, configJson)
-            elif option == "sample":
-                cmd_parser(option, configJson)
-            elif option == "benchmark":
-                cmd_parser(option, configJson)
+            elif option in ['test', 'ruleset', 'sample', 'benchmark']:
+                cmd_parser(option, configJson) 
+                pass
             else:
-                print(f"Unknown option: {arg}")
                 help()
         else:
             print(f"Argument: {arg}")
