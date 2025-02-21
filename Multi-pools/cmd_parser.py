@@ -27,31 +27,39 @@ def cmd_parser(event, context):
     sns = boto3.client('sns', region_name=context['aws']['region'])
     iam = boto3.client('iam', region_name=context['aws']['region'])
     lambda_client = boto3.client('lambda', region_name=context['aws']['region'])
+    dynamodb = boto3.resource('dynamodb', region_name=context['aws']['region'])
+
+    notify = context['notify'] # polling | notification
 
     if event is None:
         pass
-    elif event == 'ruleset':
+    
+    elif event == 'flexmatch':
         if not context.get('flexmatch') or not context['flexmatch'].get('configurations'):
             print("Missing required flexmatch configurations in context")
             raise ValueError("Invalid context structure")
           
         surfix = random.randint(1,1000)
         for config in context['flexmatch']['configurations']:
-          print(f"======= Processing configuration: {config['name']} =======")
-          _infra = Infra(config, gamelift, sns, lambda_client,iam)
-          _infra.matchmaking_configurations(surfix)
+          if config['active']:
+            print(f"======= Processing configuration: {config['name']} =======")
+            _infra = Infra(config, gamelift, sns, lambda_client, dynamodb, iam)
+            _infra.matchmaking_configurations(notify, surfix)
 
     elif event == 'sample':
         for config in context['flexmatch']['configurations']:
-           main_ticket.loadMatchMaking(config['name'])
-        main_ticket.samplePlayer(1, context['benchmark'])
+           if config['active']:
+                main_ticket.loadMatchMaking(config['name'])
+        main_ticket.samplePlayer(1, context['sample'])
         pass
 
     elif event == 'benchmark':
         for config in context['flexmatch']['configurations']:
-           main_ticket.loadMatchMaking(config['name'])
-        main_ticket.startMatchmaking(gamelift, context['benchmark'])
+           if config['active']:
+                main_ticket.loadMatchMaking(config['name'])
+        main_ticket.startMatchmaking(gamelift, dynamodb, notify, context['sample'], context['benchmark'])
         pass
+
     else:
        print('nothing!!!')
        pass

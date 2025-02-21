@@ -3,38 +3,32 @@
   "aws":{
     "region": "us-east-1"
   },
+  "notify":"lambda", 
   "flexmatch":{
     "configurations": [{
       "name": "Radiant-Dire-Survival",
-      "acceptance": 15,
+      "active": false,
+      "acceptance": 0,
       "ruleset":"RadiantDire-Survival"
     },{
       "name": "Radiant-Dire-Practice",
-      "acceptance": 15,
+      "active": false,
+      "acceptance": 0,
       "ruleset":"RadiantDire-Practice"
     },{
       "name": "Radiant-Dire-Classic",
-      "acceptance": 15,
+      "active": true,
+      "acceptance": 0,
       "ruleset":"RadiantDire-Classic"
     },{
       "name": "Radiant-Dire-All",
-      "acceptance": 15,
+      "active": false,
+      "acceptance": 0,
       "ruleset":"RadiantDire-All"
     }]
   },
-  "benchmark":{
-    "ticketPrefix": "benxiwan-",
-    "logs": "output.txt",
-    "totalPlayers": 10,
+  "sample":{
     "gameModes": [ "Classic", "Practice", "Survival" ],
-    "acceptance": {
-      "rate": 1,
-      "timeout": 10
-    },
-    "teamSize": {
-      "default": 5,
-      "small": 2
-    },
     "playerData":{
       "latency": {
         "median": 70,
@@ -47,6 +41,19 @@
       "GameMode":{
         
       }
+    }
+  },
+  "benchmark":{
+    "ticketPrefix": "benxiwan-",
+    "logs": "output.txt",
+    "totalPlayers": 10,
+    "acceptance": {
+      "rate": 1,
+      "timeout": 10
+    },
+    "teamSize": {
+      "default": 5,
+      "small": 2
     }
   }
 }

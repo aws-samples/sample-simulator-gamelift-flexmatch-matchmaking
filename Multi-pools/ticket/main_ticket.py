@@ -5,9 +5,7 @@ from .real_ticket import RealTicket
 
 class MainTicket():
   def __init__(self):
-    self.gamelift = boto3.client('gamelift')
     self.realtickets = []
-
     pass
 
   def call(self):
@@ -17,18 +15,17 @@ class MainTicket():
     print(f'Load {configuartionName} matchmaker.')
     self.realtickets.append(RealTicket(configuartionName))
 
-  def samplePlayer(self, sampleNum, benchmark):
+  def samplePlayer(self, sampleNum, sample):
     for realticket in self.realtickets:
-      realticket.samplePlayer(sampleNum, benchmark)
+      realticket.doSampling(sampleNum, sample)
 
-  def startMatchmaking(self, gamelift, benchmark):
-    self.gamelift = gamelift
+  def startMatchmaking(self, gamelift, dynamodb, nofity, sample, benchmark):
     threads = []
 
     for realticket in self.realtickets:
       thread = threading.Thread(
-        target=realticket.startMatchmaking, 
-        args=(self.gamelift, benchmark,))
+        target=realticket.doMatchmaking, 
+        args=(gamelift, dynamodb, nofity, sample, benchmark,))
       threads.append(thread)
       thread.start()
 

@@ -1,8 +1,10 @@
-import json, os, random, time, datetime
+import json, os, random, time
 import string
 import uuid
 import boto3
 import numpy as np
+
+from datetime import datetime
 
 def generate_scores(num_players, median=1000, std_dev=400):
     scores = np.random.normal(loc=median, scale=std_dev, size=num_players)
@@ -66,3 +68,4 @@ def read_json_file(file_path):
   except Exception as e:
     print(f"error: {e}")
   return None
+  

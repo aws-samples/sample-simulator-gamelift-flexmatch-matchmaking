@@ -5,7 +5,6 @@
 # - Collecting match statistics and timing data
 # - Supporting concurrent matchmaking requests
 
-
 import json, os, random, time
 import string
 import uuid
@@ -13,8 +12,8 @@ import boto3
 import numpy as np
 import threading
 
-from datetime import datetime
 from pprint import pprint
+from boto3.dynamodb.conditions import Key
 from .player import Player
 from .helpers import *
 
@@ -118,7 +117,7 @@ class RealTicket():
     # Handle other statuses
     print(f"{ticket['ConfigurationName']} - {ticket_id} - {status} - {len(ticket['Players'])} - {ticket['StartTime']}")
 
-  def monitorTicket(self, logfilePath):
+  def pollingMonitor(self, logfilePath):
     try:
       while True:
         # Monitor each active ticket
@@ -155,22 +154,52 @@ class RealTicket():
       print(f"Error during monitoring: {e}")
     pass
 
-  def mockPlayer(self, mrr_vals, lty_vals):
-    playerId = "player-" + str(random.randint(1000000, 9999999))
-    skill_mrr = random.sample(mrr_vals, 1)[0]
-    latency = random.sample(lty_vals, 1)[0]
-    player = {
-        'PlayerId': playerId,
-        'PlayerAttributes': {
-            'skill': {
-              'N': skill_mrr
-            }
-        },
-        "LatencyInMs":{
-          "us-east-1": latency
-        }
-    }
-    return player
+  def lambdaMonitor(self, logfilePath):
+    content = None
+    with open(logfilePath, 'r') as outputfile:
+      content = outputfile.read().rstrip('\n')
+    if content:
+      while True:
+        time.sleep(3)
+        print(content)
+        ddbtalbe = self.dynamodb.Table(content)
+        response = ddbtalbe.query(
+          KeyConditionExpression=Key('ticket-event').eq('MatchmakingSucceeded')
+        )
+
+        succeededItems = response['Items']
+        total_time_elapse_succeed = 0
+        num_items_succeed = 0
+        for item in succeededItems:
+          total_time_elapse_succeed += item['elapsed_time']
+          num_items_succeed += 1
+          pass
+
+        response = ddbtalbe.query(
+          KeyConditionExpression=Key('ticket-event').eq('MatchmakingFailed') or Key('ticket-event').eq('MatchmakingCancelled') or Key('ticket-event').eq('MatchmakingTimedOut')
+        )
+        
+        failedItems = response['Items']
+        total_time_elapse_failed = 0
+        num_items_failed = 0
+        for item in failedItems:
+          total_time_elapse_failed += item['elapsed_time']
+          num_items_failed += 1
+          pass
+
+        avg_time_elapse_failed = 0
+        avg_time_elapse_succeeded = 0
+        if num_items_failed > 0:
+          avg_time_elapse_failed = total_time_elapse_failed / num_items_failed
+        if num_items_succeed > 0:
+          avg_time_elapse_succeeded = total_time_elapse_succeed / num_items_succeed
+
+        logfilePath = f"{os.getcwd()}/{self.logs}"
+        with open(logfilePath, 'a') as outputfile:
+          print(f"\n\nMatchmaking Monitor for [{self.machmakingConfigurationName}] Done!", file=outputfile)
+          print(f"Complete Tickets: {num_items_succeed}, Average Time: {avg_time_elapse_succeeded:.2f} seconds", file=outputfile)
+          print(f"Failed Tickets: {num_items_failed}, Average Time: {avg_time_elapse_failed:.2f} seconds", file=outputfile)
+        break
   
   def _get_game_modes(self):
       """Determine game modes based on configuration name"""
@@ -195,38 +224,34 @@ class RealTicket():
         vals = generate_scores(num_players, value['median'],  value['std_dev'])
         attrs[attr] = vals
 
-    # self.latency = self.playerData['latency']
-    # self.skill = self.playerData['skill']
-    # mrr_vals = generate_scores(num_players, self.skill['median'],  self.skill['std_dev'])
-    # lty_vals = generate_scores(num_players, self.latency['median'], self.latency['std_dev'])
-
     for i in range(num_players):
       self.players.append(Player().mock(attrs))
       pass
-      #self.players.append(self.mockPlayer(mrr_vals, lty_vals))
 
-  def _parseConfig(self, benchmark):
+  def _parseBenchmarkConfig(self, sample, benchmark):
     self.totalPlayers = benchmark['totalPlayers']
     self.ticketPrefix =benchmark['ticketPrefix']
     self.logs = benchmark['logs']
-    self.gameModes = benchmark['gameModes']
     self.acceptance = benchmark['acceptance']
     self.teamSize = benchmark['teamSize']
-    self.playerData = benchmark['playerData']
-  
-  def samplePlayer(self, num_players, benchmark):
-    self._parseConfig(benchmark)
+    self._parseSampleConfig(sample)
+ 
+  def _parseSampleConfig(self, sample):
+    self.gameModes = sample['gameModes']
+    self.playerData = sample['playerData']
+
+  def doSampling(self, num_players, sample):
+    self._parseSampleConfig(sample)
     self.mockPlayers(num_players)
     for sample_player in self.players:
       gameModes, _, _ = self._get_game_modes()
       sample_player['PlayerAttributes']['GameMode'] = {'SL' : gameModes}
-
-    print(self.machmakingConfigurationName)
     print(self.players)
 
-  def startMatchmaking(self, gamelift, benchmark):
+  def doMatchmaking(self, gamelift, dynamodb, nofity, sample, benchmark):
     self.gamelift = gamelift
-    self._parseConfig(benchmark)
+    self.dynamodb = dynamodb
+    self._parseBenchmarkConfig(sample, benchmark)
     self.mockPlayers(self.totalPlayers)
 
     sub_players = split_array(self.players, self.teamSize['default'])
@@ -237,10 +262,18 @@ class RealTicket():
     print(f"\nStarting matchmaking for {self.machmakingConfigurationName}")
     print(f"Total players: {self.totalPlayers}, Batches: {total_batches}")
 
-    # monitor the tickets
-    logfilePath = f"{os.getcwd()}/{self.logs}"
-    monitor_thread = threading.Thread(target=self.monitorTicket, args=(logfilePath,))
-    monitor_thread.start()
+    if nofity == 'polling':
+      # monitor the tickets
+      logfilePath = f"{os.getcwd()}/{self.logs}"
+      monitor_thread = threading.Thread(target=self.pollingMonitor, args=(logfilePath,))
+      monitor_thread.start()
+    # elif nofity == 'lambda':
+    #   logfilePath = f"{os.getcwd()}/ddb"
+    #   monitor_thread = threading.Thread(target=self.lambdaMonitor, args=(logfilePath,))
+    #   monitor_thread.start()   
+    #   pass
+    else:
+      pass
 
     self.start_time = datetime.now()
     try:
@@ -251,10 +284,8 @@ class RealTicket():
         
         gameModes, sleepRandomTimeLower, sleepRandomTimeUpper = self._get_game_modes()
         sleepTime = random.randint(sleepRandomTimeLower, sleepRandomTimeUpper)
-
         for batch_player in batch_players:
-          batch_player['PlayerAttributes']['GameMode'] = {'SL' : gameModes}
-        
+          batch_player['PlayerAttributes']['GameMode'] = {'SL' : gameModes}        
         print(f"starting matchmaking for: {self.machmakingConfigurationName} with players: {len(batch_players)} game mode: {gameModes}")
 
         response = self.gamelift.start_matchmaking(
@@ -268,12 +299,17 @@ class RealTicket():
 
         #print(f'sleep {sleepTime} seconds')
         time.sleep(sleepTime)
-  
+
+      if nofity == 'lambda':
+        logfilePath = f"{os.getcwd()}/ddb"
+        self.lambdaMonitor(logfilePath)
     except Exception as e:
       print(f"\nError during matchmaking: {str(e)}")
     finally:
+      if nofity == 'polling':
+        monitor_thread.join()  # Wait for monitor thread to 
+        
       self.end_time = datetime.now()
-      monitor_thread.join()  # Wait for monitor thread to complete
       total_time = (self.end_time - self.start_time).total_seconds()
       formatted_time = format_elapsed_time(int(total_time))
 

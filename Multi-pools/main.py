@@ -21,13 +21,14 @@ from ticket.helpers import read_json_file
 from pprint import pprint
 
 import sys,json,os
+from datetime import datetime
 
 def help():
     print("Usage: main.py [options] [arguments]")
     print("Options:")
     print("\t-help: Show this help message")
     print("\t-print: output json of all configurations")
-    print("\t-ruleset: Create configuration if not exist and Update configuration rulesets")
+    print("\t-flexmatch: Create configuration if not exist and Update configuration rulesets")
     print("\t-sample: sample json of a player")
     print("\t-benchmark: Start a benchmark")
 
@@ -47,7 +48,7 @@ if len(sys.argv) > 1:
             if option == "print":
                 pprint(configJson)
                 pass
-            elif option in ['test', 'ruleset', 'sample', 'benchmark']:
+            elif option in ['test', 'flexmatch', 'sample', 'benchmark']:
                 cmd_parser(option, configJson) 
                 pass
             else:
@@ -56,3 +57,6 @@ if len(sys.argv) > 1:
             print(f"Argument: {arg}")
 else:
     print("No arguments provided.")
+    help()
+
+
