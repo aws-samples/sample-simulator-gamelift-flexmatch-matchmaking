@@ -168,6 +168,11 @@ Examples:
    
 ## Interpreting Benchmark Results (polling)
 
+in Configs
+```
+"notify":"polling",
+```
+
 The benchmark results will display the following information for each matchmaking configuration:
 - Number of completed tickets and average matchmaking time
 - Number of failed tickets and average time
@@ -197,6 +202,14 @@ Failed Tickets: 309, Average Time: 29.45 seconds
 ```
 
 ## Interpreting Benchmark Results (lambda)
+
+in Configs
+```
+"notify":"lambda",
+```
+In this approach, you will create a FlexMatch configuration with the configuration name, and then a series of services will be generated: SNS, Lambda, and DynamoDB.
+
+For example, if our configuration name is "Radiant-Dire-Classic", then the SNS name will be "Radiant-Dire-Classic-sns", the generated Lambda service will be "Radiant-Dire-Classic-lambda", and finally, a DynamoDB table will be created with the name "Radiant-Dire-Classic-ddb".
 
 example result of benchmark
 
