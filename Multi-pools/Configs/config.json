@@ -18,7 +18,7 @@
     },{
       "name": "Radiant-Dire-Classic",
       "active": true,
-      "acceptance": 0,
+      "acceptance": 15,
       "ruleset":"RadiantDire-Classic"
     },{
       "name": "Radiant-Dire-All",
