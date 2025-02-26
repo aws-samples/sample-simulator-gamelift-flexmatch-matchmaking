@@ -71,7 +71,7 @@ def read_json_file(file_path):
 
 # Check if the benchmarkFilePath exists. If it doesn't exist, create it and write 1 to it. If it exists, read the value inside, 
 # increment it by 1, and then overwrite the source file with the new value.
-def incremental_read(benchmarkFilePath):
+def incremental_read(benchmarkFilePath, flag=0):
   lastbenchmarkId = 0
   benchmarkId = 1
   if not os.path.exists(benchmarkFilePath):
@@ -81,7 +81,7 @@ def incremental_read(benchmarkFilePath):
   else:
     with open(benchmarkFilePath, 'r+') as f:
       lastbenchmarkId = int(f.read().strip())
-      benchmarkId = lastbenchmarkId + 1
+      benchmarkId = lastbenchmarkId + flag
       f.seek(0)
       f.write(str(benchmarkId))
       f.truncate()

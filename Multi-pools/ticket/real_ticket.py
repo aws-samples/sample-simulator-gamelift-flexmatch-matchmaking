@@ -268,7 +268,7 @@ class RealTicket():
       sample_player['PlayerAttributes']['GameMode'] = {'SL' : gameModes}
     print(self.players)
 
-  def doMatchmaking(self, gamelift, dynamodb, notity, sample, benchmark):
+  def doMatchmaking(self, gamelift, dynamodb, notify, sample, benchmark):
     self.gamelift = gamelift
     self.dynamodb = dynamodb
     self._parseBenchmarkConfig(sample, benchmark)
@@ -279,14 +279,14 @@ class RealTicket():
       sub_players = split_array(self.players, self.teamSize['small'])  
     total_batches = len(sub_players)
 
-    print(f"\nStarting matchmaking for {self.machmakingConfigurationName}, notify type {notity}")
+    print(f"\nStarting matchmaking for {self.machmakingConfigurationName}, notify type {notify}")
     print(f"Total players: {self.totalPlayers}, Batches: {total_batches}")
 
-    if notity == 'polling':
+    if notify == 'polling':
       # monitor the tickets
       monitor_thread = threading.Thread(target=self.monitorTask, args=())
       monitor_thread.start()
-    elif notity == 'lambda':
+    elif notify == 'lambda':
       monitor_thread = threading.Thread(target=self.monitorTask, args=())
       monitor_thread.start()   
       pass
@@ -296,11 +296,14 @@ class RealTicket():
     self.start_time = datetime.now()
     try:
       benchmarkFilePath = f"{os.getcwd()}/benchmark"
-      benchmarkId, lastbenchmarkId = incremental_read(benchmarkFilePath)
+      flag = 0
+      if notify == 'lambda':
+        flag = 1
+      benchmarkId, lastbenchmarkId = incremental_read(benchmarkFilePath, flag)
       self.benchmarkId = str(benchmarkId).zfill(4)
       self.lastbenchmarkId = str(lastbenchmarkId).zfill(4)
 
-      print(f'\n\t current bechmark id: {self.benchmarkId} \t notify type: {notity}')
+      print(f'\n\t current bechmark id: {self.benchmarkId} \t notify type: {notify}')
 
       for index, batch_players in enumerate(sub_players, 1):
         progress = (index / total_batches) * 100
