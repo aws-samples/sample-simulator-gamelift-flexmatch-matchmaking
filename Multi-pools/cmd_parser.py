@@ -69,6 +69,13 @@ def cmd_parser(event, context):
         main_ticket.startMatchmaking(gamelift, dynamodb, notify, context['sample'], context['benchmark'])
         pass
     
+    elif event == 'result':
+        for config in context['flexmatch']['configurations']:
+           if config['active']:
+            main_ticket.loadMatchMaking(config['name'])
+        main_ticket.getMatchmakingResult(dynamodb, context['benchmark'])
+        pass
+
     else:
        print('nothing!!!')
        pass

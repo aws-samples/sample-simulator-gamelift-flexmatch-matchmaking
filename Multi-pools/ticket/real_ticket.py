@@ -16,6 +16,7 @@ from pprint import pprint
 from boto3.dynamodb.conditions import Key
 from .player import Player
 from .helpers import *
+from .PartiQLWrapper import PartiQLWrapper
 
 class RealTicket():
 
@@ -28,6 +29,7 @@ class RealTicket():
     self.start_time = None
     self.end_time = None
     self.pending_acceptances = {}  # Track tickets waiting for acceptance
+    self.benchmarkId = '0000'
     pass
 
   def call(self):
@@ -102,7 +104,7 @@ class RealTicket():
       self.ticketIds.remove(ticket_id)
       self.completeTickets.append(elapsed_time)
       print(f"{ticket['ConfigurationName']} - {ticket_id} - {status} - {elapsed_time}")
-      print(f"{ticket}")
+      # print(f"{ticket}")
       return
       
     # Handle failed tickets
@@ -115,10 +117,9 @@ class RealTicket():
       print(f"{ticket['ConfigurationName']} - {ticket_id} - {status} - {elapsed_time}")
       return
 
-  def pollingMonitor(self, logfilePath):
+  def monitorTask(self):
     try:
       while True:
-        
         # Monitor each active ticket
         for ticket_id in list(self.ticketIds):  # Create a copy to avoid modification during iteration
           response = self.gamelift.describe_matchmaking(TicketIds=[ticket_id])
@@ -141,88 +142,84 @@ class RealTicket():
           complete_avg = sum(self.completeTickets) / len(self.completeTickets) if self.completeTickets else 0
           failed_avg = sum(self.failedTickets) / len(self.failedTickets) if self.failedTickets else 0
 
-          print(logfilePath)
-          with open(logfilePath, 'a') as outputfile:
-            print(f"\n\nMatchmaking Monitor for [{self.machmakingConfigurationName}] Done!", file=outputfile)
-            print(f"Complete Tickets: {len(self.completeTickets)}, Average Time: {complete_avg:.2f} seconds", file=outputfile)
-            # print(self.failedTickets)
-            print(f"Failed Tickets: {len(self.failedTickets)}, Average Time: {failed_avg:.2f} seconds", file=outputfile)
+          print(f"\nMatchmaking Monitor for [{self.machmakingConfigurationName}] Done!")
+          print(f"Complete Tickets: {len(self.completeTickets)}, Average Time: {complete_avg:.2f} seconds")
+          print(f"Failed Tickets: {len(self.failedTickets)}, Average Time: {failed_avg:.2f} seconds\n")
+
+          # print(logfilePath)
+          # with open(logfilePath, 'a') as outputfile:
+          #   print(f"\n\nMatchmaking Monitor for [{self.machmakingConfigurationName}] Done!", file=outputfile)
+          #   print(f"Complete Tickets: {len(self.completeTickets)}, Average Time: {complete_avg:.2f} seconds", file=outputfile)
+          #   # print(self.failedTickets)
+          #   print(f"Failed Tickets: {len(self.failedTickets)}, Average Time: {failed_avg:.2f} seconds", file=outputfile)
           break
         time.sleep(3)
     except Exception as e:
       print(f"Error during monitoring: {e}")
     pass
 
-  def lambdaMonitor(self, logfilePath):
-    try:
-      while True:
-         # Monitor each active ticket
-        for ticket_id in list(self.ticketIds):  # Create a copy to avoid modification during iteration
-          response = self.gamelift.describe_matchmaking(TicketIds=[ticket_id])
-          for ticket in response['TicketList']:
-            status = ticket['Status']
-            if status == 'REQUIRES_ACCEPTANCE':
-              if ticket_id not in self.pending_acceptances:
-                print(f"{ticket['ConfigurationName']} - {ticket_id} - {status} - Requires acceptance")
-                self.pending_acceptances[ticket_id] = time.time()
-                if self.handle_match_acceptance(ticket_id, ticket['Players']):
-                  print(f"All players accepted match for ticket {ticket_id}")
-                else:
-                  print(f"Match acceptance failed for ticket {ticket_id}")
-              pass
-          
-        if self.end_time is not None and len(self.pending_acceptances) == len(self.ticketIds):
-          print('acceptance finished')
-          break
-        time.sleep(3)
-    except Exception as e:
-      print(f"Error during monitoring: {e}")
-    return 
-    # content = None
-    # with open(logfilePath, 'r') as outputfile:
-    #   content = outputfile.read().rstrip('\n')
-    # if content:
-    #   while True:
-    #     time.sleep(3)
-    #     print(content)
-    #     ddbtalbe = self.dynamodb.Table(content)
-    #     response = ddbtalbe.query(
-    #       KeyConditionExpression=Key('ticket-event').eq('MatchmakingSucceeded')
-    #     )
+  def lambdaResult(self, dynamodb, benchmark):
+    self.dynamodb = dynamodb
+    self.logs = benchmark['logs']
 
-    #     succeededItems = response['Items']
-    #     total_time_elapse_succeed = 0
-    #     num_items_succeed = 0
-    #     for item in succeededItems:
-    #       total_time_elapse_succeed += item['elapsed_time']
-    #       num_items_succeed += 1
-    #       pass
+    logfilePath = f"{os.getcwd()}/ddb"
+    tableName = None
+    with open(logfilePath, 'r') as outputfile:
+      tableName = outputfile.read().rstrip('\n')
+    if not tableName:
+      return 
+    
+    benchmarkFilePath = f"{os.getcwd()}/benchmark"
+    with open(benchmarkFilePath, 'r+') as f:
+      lastbenchmarkId = int(f.read().strip())
+    self.lastbenchmarkId = str(lastbenchmarkId).zfill(4)
+   
+    self.ticketPrefix =benchmark['ticketPrefix']
+    keyprefix = f'{self.ticketPrefix}-{self.lastbenchmarkId}-'
+    print(f'\ttable name {tableName}, ticket prefix: {keyprefix}')
 
-    #     response = ddbtalbe.query(
-    #       KeyConditionExpression=Key('ticket-event').eq('MatchmakingFailed') or Key('ticket-event').eq('MatchmakingCancelled') or Key('ticket-event').eq('MatchmakingTimedOut')
-    #     )
-        
-    #     failedItems = response['Items']
-    #     total_time_elapse_failed = 0
-    #     num_items_failed = 0
-    #     for item in failedItems:
-    #       total_time_elapse_failed += item['elapsed_time']
-    #       num_items_failed += 1
-    #       pass
+    wrapper = PartiQLWrapper(self.dynamodb)
 
-    #     avg_time_elapse_failed = 0
-    #     avg_time_elapse_succeeded = 0
-    #     if num_items_failed > 0:
-    #       avg_time_elapse_failed = total_time_elapse_failed / num_items_failed
-    #     if num_items_succeed > 0:
-    #       avg_time_elapse_succeeded = total_time_elapse_succeed / num_items_succeed
+    output = wrapper.run_partiql(
+        f'SELECT * FROM "{tableName}" WHERE begins_with("ticket_id", ?) AND ("ticket_event" = ?)', 
+        [keyprefix, 'MatchmakingSucceeded']
+    )
+    total_time_elapse_succeed = 0
+    num_items_succeed = 0
+    for item in output["Items"]:
+      # print(f"\n{item['ticket_event']}, {item['ticket_id']}, {item['elapsed_time']}")
+      total_time_elapse_succeed += item['elapsed_time']
+      num_items_succeed += 1
 
-    #     logfilePath = f"{os.getcwd()}/{self.logs}"
-    #     with open(logfilePath, 'a') as outputfile:
-    #       print(f"\n\nMatchmaking Monitor for [{self.machmakingConfigurationName}] Done!", file=outputfile)
-    #       print(f"Complete Tickets: {num_items_succeed}, Average Time: {avg_time_elapse_succeeded:.2f} seconds", file=outputfile)
-    #       print(f"Failed Tickets: {num_items_failed}, Average Time: {avg_time_elapse_failed:.2f} seconds", file=outputfile)
-    #     break
+    output = wrapper.run_partiql(
+        f'SELECT * FROM "{tableName}" WHERE begins_with("ticket_id", ?) AND ("ticket_event" = ? OR "ticket_event" = ? OR "ticket_event" = ? )', 
+        [keyprefix, 'MatchmakingFailed', 'MatchmakingCancelled', 'MatchmakingTimedOut']
+    )
+    total_time_elapse_failed = 0
+    num_items_failed = 0
+    for item in output["Items"]:
+      # print(f"\n{item['ticket_event']}, {item['ticket_id']}, {item['elapsed_time']}")
+      total_time_elapse_failed += item['elapsed_time']
+      num_items_failed += 1
+
+    avg_time_elapse_failed = 0
+    avg_time_elapse_succeeded = 0
+    if num_items_failed > 0:
+      avg_time_elapse_failed = total_time_elapse_failed / num_items_failed
+    if num_items_succeed > 0:
+      avg_time_elapse_succeeded = total_time_elapse_succeed / num_items_succeed
+
+    print(f"\nMatchmaking Monitor for [{self.machmakingConfigurationName}] Done!")
+    print(f"Complete Tickets: {num_items_succeed}, Average Time: {avg_time_elapse_succeeded:.2f} seconds")
+    print(f"Failed Tickets: {num_items_failed}, Average Time: {avg_time_elapse_failed:.2f} seconds\n")
+
+    # logfilePath = f"{os.getcwd()}/{self.logs}"
+    # with open(logfilePath, 'a') as outputfile:
+    #   print(f"\n\nMatchmaking Monitor for [{self.machmakingConfigurationName}] Done!", file=outputfile)
+    #   print(f"Complete Tickets: {num_items_succeed}, Average Time: {avg_time_elapse_succeeded:.2f} seconds", file=outputfile)
+    #   print(f"Failed Tickets: {num_items_failed}, Average Time: {avg_time_elapse_failed:.2f} seconds", file=outputfile)
+
+    pass
   
   def _get_game_modes(self):
       """Determine game modes based on configuration name"""
@@ -287,12 +284,10 @@ class RealTicket():
 
     if notity == 'polling':
       # monitor the tickets
-      logfilePath = f"{os.getcwd()}/{self.logs}"
-      monitor_thread = threading.Thread(target=self.pollingMonitor, args=(logfilePath,))
+      monitor_thread = threading.Thread(target=self.monitorTask, args=())
       monitor_thread.start()
     elif notity == 'lambda':
-      logfilePath = f"{os.getcwd()}/ddb"
-      monitor_thread = threading.Thread(target=self.lambdaMonitor, args=(logfilePath,))
+      monitor_thread = threading.Thread(target=self.monitorTask, args=())
       monitor_thread.start()   
       pass
     else:
@@ -301,7 +296,11 @@ class RealTicket():
     self.start_time = datetime.now()
     try:
       benchmarkFilePath = f"{os.getcwd()}/benchmark"
-      benchmarkId = incremental_read(benchmarkFilePath)
+      benchmarkId, lastbenchmarkId = incremental_read(benchmarkFilePath)
+      self.benchmarkId = str(benchmarkId).zfill(4)
+      self.lastbenchmarkId = str(lastbenchmarkId).zfill(4)
+
+      print(f'\n\t current bechmark id: {self.benchmarkId} \t notify type: {notity}')
 
       for index, batch_players in enumerate(sub_players, 1):
         progress = (index / total_batches) * 100
@@ -314,7 +313,7 @@ class RealTicket():
         print(f"starting matchmaking for: {self.machmakingConfigurationName} with players: {len(batch_players)} game mode: {gameModes} sleep time: {sleepTime}")
 
         response = self.gamelift.start_matchmaking(
-          TicketId= f'{self.ticketPrefix}-{str(benchmarkId).zfill(4)}-{generate_random_string(10)}',
+          TicketId= f'{self.ticketPrefix}-{self.benchmarkId}-{generate_random_string(10)}',
           ConfigurationName=self.machmakingConfigurationName,
           Players=batch_players
         )

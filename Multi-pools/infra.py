@@ -355,7 +355,7 @@ class Infra():
           self.arns.append(topic_arn)
           self.sns_update_policy(topic_arn, configure_arn)
 
-          table_name = self.create_dynamodb_table(f'{self.config["name"]}-ddb-{self.surffix}', 'ticket-id', 'ticket-event')
+          table_name = self.create_dynamodb_table(f'{self.config["name"]}-ddb-{self.surffix}', 'ticket_id', 'ticket_event')
           ddb_file = f"{os.getcwd()}/ddb"
           with open(ddb_file, 'w') as outputfile:
             print(f"{table_name}", file=outputfile)

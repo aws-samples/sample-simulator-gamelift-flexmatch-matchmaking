@@ -50,8 +50,8 @@ def batch_put_item(customEventData, tickets, matchevent_time, matchevent_status)
           elapsed_time = calculate_elapsed_time(ticket_start_time, matchevent_time)
 
           item = {
-            'ticket-id': ticket_id,
-            'ticket-event': matchevent_status,
+            'ticket_id': ticket_id,
+            'ticket_event': matchevent_status,
             'matchevent_time': matchevent_time,
             'ticket_start_time': ticket_start_time,
             'elapsed_time': elapsed_time,

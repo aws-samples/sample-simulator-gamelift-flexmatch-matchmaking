@@ -33,5 +33,9 @@ class MainTicket():
     for thread in threads:
       thread.join()
 
+  def getMatchmakingResult(self, dynamodb, benchmark):
+    for realticket in self.realtickets:
+      realticket.lambdaResult(dynamodb, benchmark)
+
 main_ticket = MainTicket()
 

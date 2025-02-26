@@ -18,3 +18,6 @@ numpy==1.23.5
 
 # For creating and manipulating dates and times (if not using standard library)
 # python-dateutil==2.8.2
+
+nose=1.3.7
+scaffold=0.1.3
