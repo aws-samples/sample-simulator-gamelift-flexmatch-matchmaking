@@ -16,10 +16,10 @@
       "acceptance": 0,
       "ruleset":"RadiantDire-Practice"
     },{
-      "name": "Radiant-Dire-Classic",
+      "name": "Radiant-Dire-Classic-1",
       "active": true,
       "acceptance": 15,
-      "ruleset":"RadiantDire-Classic"
+      "ruleset":"RadiantDire-Classic-1"
     },{
       "name": "Radiant-Dire-All",
       "active": false,
@@ -44,7 +44,7 @@
     }
   },
   "benchmark":{
-    "ticketPrefix": "benxiwan-",
+    "ticketPrefix": "benxiwan",
     "logs": "output.txt",
     "totalPlayers": 10,
     "acceptance": {

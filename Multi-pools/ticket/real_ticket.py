@@ -300,11 +300,13 @@ class RealTicket():
 
     self.start_time = datetime.now()
     try:
+      benchmarkFilePath = f"{os.getcwd()}/benchmark"
+      benchmarkId = incremental_read(benchmarkFilePath)
+
       for index, batch_players in enumerate(sub_players, 1):
         progress = (index / total_batches) * 100
         print(f"==== Progress: {progress:.1f}% - Batch {index}/{total_batches} - "
               f"==== Processing {len(batch_players)} players in {self.machmakingConfigurationName}")
-        
         gameModes, sleepRandomTimeLower, sleepRandomTimeUpper = self._get_game_modes()
         sleepTime = random.randint(sleepRandomTimeLower, sleepRandomTimeUpper)
         for batch_player in batch_players:
@@ -312,7 +314,7 @@ class RealTicket():
         print(f"starting matchmaking for: {self.machmakingConfigurationName} with players: {len(batch_players)} game mode: {gameModes} sleep time: {sleepTime}")
 
         response = self.gamelift.start_matchmaking(
-          TicketId= self.ticketPrefix + generate_random_string(10),
+          TicketId= f'{self.ticketPrefix}-{str(benchmarkId).zfill(4)}-{generate_random_string(10)}',
           ConfigurationName=self.machmakingConfigurationName,
           Players=batch_players
         )

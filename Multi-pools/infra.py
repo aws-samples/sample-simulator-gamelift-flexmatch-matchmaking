@@ -52,75 +52,82 @@ class Infra():
     self.dynamodb = dynamodb
     self.iam = iam
     self.surffix = 0
+    self.tags = [
+        {
+            'Key': 'name',
+            'Value': f"{self.config['name']}"
+        },
+    ]
+    self.arns = []
+    pass
+  
+  def destroy_resources(self):
+    arnFile = f"{os.getcwd()}/arn"
+    with open(arnFile, 'r') as inputfile:
+      for line in inputfile:
+        arn = line.strip()
+        if arn:
+          self.arns.append(arn)
+
+    unique_arn_list = list(set(self.arns))
+    # print(unique_arn_list)
+    for arn in unique_arn_list:
+      print(f"deleting {arn}")
+      try:
+        if 'arn:aws:gamelift' in arn and 'matchmakingruleset' in arn:
+          response = self.gamelift.delete_matchmaking_rule_set(
+            Name=arn
+          )
+          pass
+        elif 'arn:aws:gamelift' in arn and 'matchmakingconfiguratio' in arn:
+          response = self.gamelift.delete_matchmaking_configuration(
+            Name=arn
+          )
+          pass
+        elif 'arn:aws:iam' in arn:
+          role_name = arn.split('/')[-1]
+          attached_policies = self.iam.list_attached_role_policies(
+            RoleName=role_name
+          )
+          for policy in attached_policies['AttachedPolicies']:
+            policy_arn = policy['PolicyArn']
+            self.iam.detach_role_policy(
+                RoleName=role_name,
+                PolicyArn=policy_arn
+            )
+          response = self.iam.delete_role(
+            RoleName=role_name
+          )
+          pass
+        elif 'arn:aws:sns' in arn:
+          response = self.sns.delete_topic(
+            TopicArn=arn
+          )
+          pass
+        elif 'arn:aws:lambda' in arn:
+          response = self.lambda_client.delete_function(
+            FunctionName=arn
+          )
+          pass
+        elif 'arn:aws:dynamodb' in arn:
+          table_name = arn.split('/')[-1]
+          table = self.dynamodb.Table(table_name)
+          table.delete()
+          pass
+      except Exception as e:
+        print(f"Error deleting function: {e}")
     pass
 
-  def create_lambda_execution_role(self, lambda_name):
-    role_name = f"{lambda_name}-role"
-    response = {}
-    print()
-    try:
-        response = self.iam.create_role(
-          RoleName=role_name,
-          AssumeRolePolicyDocument=json.dumps(policy_document)
-        )  
-    except Exception as e:
-        response = self.iam.get_role(RoleName=role_name)
-    
-    self.iam.attach_role_policy(
-      RoleName=role_name,
-      PolicyArn='arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
-    )
-    self.iam.attach_role_policy(
-      RoleName=role_name,
-      PolicyArn='arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess'
-    )
+  def store_resources(self):
+    arnFile = f"{os.getcwd()}/arn"
+    if os.path.exists(arnFile):
+       # remove file
+       os.remove(arnFile)
 
-    role_arn = response['Role']['Arn']  
-    print(f'\tRole ARN: {role_arn}')
-    return role_arn
-
-  def create_lambda_function(self):
-      lambda_function_name = f"{self.config['name']}-lambda"
-      role_arn = self.create_lambda_execution_role(lambda_function_name)
-      response = {}
-      with open(f"{os.getcwd()}/Multi-pools/lambda/lambda_function.zip", 'rb') as f:
-        lambda_code = f.read()
-
-      try:
-        response = self.lambda_client.get_function(FunctionName=lambda_function_name)
-        print(f'\tLambda function {lambda_function_name} exists')
-
-        response = self.lambda_client.update_function_code(
-          FunctionName=lambda_function_name,
-          ZipFile=lambda_code
-        )
-      except Exception as e:
-        print(f"\tError during creating lambda function: {e}")
-        response = self.lambda_client.create_function(
-            FunctionName=lambda_function_name,
-            Runtime='python3.9',
-            Role=role_arn,
-            Handler='lambda_function.lambda_handler',
-            Code=dict(ZipFile=lambda_code)
-        )
-      finally:
-        # self.create_dynamodb_table('benchmark', "key", "value")
-        # self.dynamodb.Table('benchmark').put_item(
-        #   Item={
-        #         'key': 'id',
-        #         'value': 0
-        #     }
-        # )
-
-        table_name = self.create_dynamodb_table(f'{self.config["name"]}-ddb-{self.surffix}', 'ticket-event', 'ticket-id')
-        table_temp_file = f"{os.getcwd()}/ddb"
-        with open(table_temp_file, 'w') as outputfile:
-          print(f"{table_name}", file=outputfile)
-         
-      lambda_arn = response['FunctionArn']
-      print(f'\tLambda function ARN: {lambda_arn}')
-
-      return lambda_arn
+    with open(arnFile, 'a') as outputfile:
+      for arn in self.arns:
+        print(f"{arn}", file=outputfile)
+    pass
 
   def matchmaking_configurations(self, notify, surffix):
     # Check if configuration already exists
@@ -146,7 +153,7 @@ class Infra():
         if len(response['Configurations']) > 0:
             print(f"\tConfiguration {self.config['name']} already exists")
 
-        self.gamelift.update_matchmaking_configuration(
+        response = self.gamelift.update_matchmaking_configuration(
             Name=self.config['name'],
             FlexMatchMode='STANDALONE',
             AcceptanceRequired=AcceptanceRequired,
@@ -154,42 +161,126 @@ class Infra():
             RuleSetName=rulesetName,
             CustomEventData=CustomEventData
         )
-
+        configure_arn = response['Configuration']['ConfigurationArn']
         print(f"\tUpdated matchmaking configuration: {self.config['name']} with new ruleset: {rulesetName}")
 
     except Exception as e:
-        print(f"Error during monitoring: {e}")
-        print(f"Configuration {self.config['name']} not exists")
+        #print(f"Error during monitoring: {e}")
+        print(f"\tConfiguration {self.config['name']} not exists")
         # create matchmaking configurations
-        self.gamelift.create_matchmaking_configuration(
-            Name=self.config['name'],
-            FlexMatchMode='STANDALONE',
-            AcceptanceRequired=AcceptanceRequired,
-            AcceptanceTimeoutSeconds=AcceptanceTimeoutSeconds,
-            RequestTimeoutSeconds=120,
-            RuleSetName=rulesetName,
-            CustomEventData=CustomEventData
+        response = self.gamelift.create_matchmaking_configuration(
+          Name=self.config['name'],
+          FlexMatchMode='STANDALONE',
+          AcceptanceRequired=AcceptanceRequired,
+          AcceptanceTimeoutSeconds=AcceptanceTimeoutSeconds,
+          RequestTimeoutSeconds=120,
+          RuleSetName=rulesetName,
+          CustomEventData=CustomEventData,
+          Tags = self.tags
         )
-
         print(f"\tCreated matchmaking configuration: {self.config['name']}")
-        configure_arn = response['Configurations']['ConfigurationArn']
+        configure_arn = response['Configuration']['ConfigurationArn']
+
     finally:
         if current_ruleset != "":
             self.gamelift.delete_matchmaking_rule_set(Name=current_ruleset)
             print(f"\tDeleted old ruleset: {current_ruleset}")
         if configure_arn != "" and notify == "lambda":
             self.sns_create_pipeline(configure_arn)
+        self.arns.append(configure_arn)
+        self.store_resources()
         pass
+  
+  def lambda_function_exists(self, function_name):
+    try:
+        response = self.lambda_client.list_functions()
+        for func in response['Functions']:
+            if func['FunctionName'] == function_name:
+                return True
+        return False
+    except Exception as e:
+        print(f"Error checking Lambda function existence: {e}")
+        return False
     
+  def create_lambda_execution_role(self, lambda_name):
+    role_name = f"{lambda_name}-role"
+    response = {}
+    print()
+    try:
+        response = self.iam.get_role(RoleName=role_name)
+    except Exception as e:
+        print(f"\tRole {role_name} not exists ")
+        response = self.iam.create_role(
+          RoleName=role_name,
+          AssumeRolePolicyDocument=json.dumps(policy_document),
+          Tags = self.tags
+        ) 
+        self.iam.attach_role_policy(
+          RoleName=role_name,
+          PolicyArn='arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        )
+        self.iam.attach_role_policy(
+          RoleName=role_name,
+          PolicyArn='arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess'
+        )
+        time.sleep(5)
+
+    role_arn = response['Role']['Arn']  
+    print(f'\tRole ARN: {role_arn}')
+    self.arns.append(role_arn)
+    return role_arn
+
+  def create_lambda_function(self, topic_arn):
+      lambda_function_name = f"{self.config['name']}-lambda"
+      role_arn = self.create_lambda_execution_role(lambda_function_name)
+      response = {}
+      try:
+        print()
+        with open(f"{os.getcwd()}/Multi-pools/lambda/lambda_function.zip", 'rb') as f:
+          lambda_code = f.read()
+        if not self.lambda_function_exists(lambda_function_name):
+          print(f"\tLambda function {lambda_function_name} not exists ")
+          response = self.lambda_client.create_function(
+            FunctionName=lambda_function_name,
+            Runtime='python3.9',
+            Role=role_arn,
+            Handler='lambda_function.lambda_handler',
+            Code=dict(ZipFile=lambda_code),
+            Tags={'name': f"{self.config['name']}"}
+          )
+          lambda_arn = response['FunctionArn']
+          self.lambda_client.add_permission(
+            FunctionName=lambda_arn,
+            StatementId='sns-trigger',
+            Action='lambda:InvokeFunction',
+            Principal='sns.amazonaws.com',
+            SourceArn=topic_arn
+          )
+        else:
+          print(f'\tLambda function {lambda_function_name} exists')
+          response = self.lambda_client.update_function_code(
+            FunctionName=lambda_function_name,
+            ZipFile=lambda_code
+          )
+      except Exception as e:
+        print(f"Error lambda function: {str(e)}")
+         
+      lambda_arn = response['FunctionArn']
+      print(f'\tLambda function ARN: {lambda_arn}')
+      self.arns.append(lambda_arn)
+      return lambda_arn
+  
   def create_matchmaking_rule_set(self, rulesetName):
     try:
         rulesetJson = read_json_file(os.getcwd()+f"/Multi-pools/Configs/{self.config['ruleset']}.json")
 
-        self.gamelift.create_matchmaking_rule_set(
-            Name=rulesetName,
-            RuleSetBody=json.dumps(rulesetJson)
+        response = self.gamelift.create_matchmaking_rule_set(
+          Name=rulesetName,
+          RuleSetBody=json.dumps(rulesetJson),
+          Tags = self.tags
         )
         print(f"\tCreated new ruleset: {rulesetName}")
+        self.arns.append(response['RuleSet']['RuleSetArn'])
     except Exception as e:
         print(f"Error during monitoring: {e}")
         return ""
@@ -209,18 +300,20 @@ class Infra():
             AttributeValue=json.dumps(access_policy)
         )
         print(f"\tUpdated  SNS topic '{topic_arn}' with new access policy")
+        self.sns_remove_subscriptions(topic_arn)
+        print(f"\tRemove  SNS topic '{topic_arn}' old subscriptions")
     except Exception as e:
         print(f"Error updating SNS topic: {str(e)}")
-    finally:
-        self.sns_remove_subscriptions(topic_arn)
+    finally:       
+        lambda_arn = self.create_lambda_function(topic_arn)
 
-        lambda_arn = self.create_lambda_function()
         subscription_response = self.sns.subscribe(
           TopicArn=topic_arn,
           Protocol='lambda',
           Endpoint=lambda_arn
         )
-        print(f"\tSubscribed Lambda function to SNS topic: {lambda_arn}")
+       # print(subscription_response)
+        print(f"\tSubscribed Lambda function {lambda_arn} to SNS topic: {topic_arn}")
     pass
 
   def sns_remove_subscriptions(self, topic_arn):
@@ -245,29 +338,41 @@ class Infra():
         else:
             # Create a new SNS topic
             response = self.sns.create_topic(
-                Name=name,
-                Attributes={
-                    'DisplayName': name,
-                    'FifoTopic': 'false'
-                }
+              Name=name,
+              Attributes={
+                  'DisplayName': name,
+                  'FifoTopic': 'false'
+              },
+              Tags = self.tags
             )
             topic_arn = response['TopicArn']
             print(f"\n\tCreated new SNS topic '{name}' with ARN: {topic_arn}")
-        
     except Exception as e:
         print(f"\tError creating SNS topic: {str(e)}")
 
     finally:
         if topic_arn:
+          self.arns.append(topic_arn)
           self.sns_update_policy(topic_arn, configure_arn)
+
+          table_name = self.create_dynamodb_table(f'{self.config["name"]}-ddb-{self.surffix}', 'ticket-id', 'ticket-event')
+          ddb_file = f"{os.getcwd()}/ddb"
+          with open(ddb_file, 'w') as outputfile:
+            print(f"{table_name}", file=outputfile)
+
           self.gamelift.update_matchmaking_configuration(
               Name = self.config['name'],
               NotificationTarget = topic_arn
           )
-          print(f"\tUpdated matchmaking configuration: {self.config['name']} with notification: {topic_arn}")
+          print(f"\n\tUpdated matchmaking configuration: {self.config['name']} with notification: {topic_arn}")
     pass
 
   def create_dynamodb_table(self, table_name, partition_key, sort_key=None):
+    ddb_file = f"{os.getcwd()}/ddb"
+    ddb_talbe = ""
+    with open(ddb_file, 'r') as outputfile:
+      ddb_talbe = outputfile.readline().strip()
+
     # table_name = f'{table_name}-ddb-{self.surffix}'
     existing_tables = self.dynamodb.tables.all()
     existing_table_names = [table.name for table in existing_tables]
@@ -303,10 +408,21 @@ class Infra():
         ProvisionedThroughput={
           'ReadCapacityUnits': 5,  
           'WriteCapacityUnits': 5  
-        }
+        },
+        Tags = self.tags
       )
-      table.meta.client.get_waiter('table_exists').wait(TableName=table_name)
-      print(f"\tTable '{table_name}' created successfully.")
+      table.meta.client.get_waiter('table_exists').wait(TableName=table_name)   
+      table_arn = table.table_arn
+      print(f"\n\tTable '{table_name}:{table_arn}' created successfully.")
+      self.arns.append(table_arn)
+
+      if ddb_talbe in existing_table_names:
+        table = self.dynamodb.Table(ddb_talbe)
+        table.delete()
+        # self.dynamodb.delete_table(TableName=ddb_talbe)
+        print(f"\tTable '{ddb_talbe}' deleted successfully.")
     except Exception as e:
       print(f"\tError creating table '{table_name}': {e}")
-    return table_name
+
+    return table_name    
+    

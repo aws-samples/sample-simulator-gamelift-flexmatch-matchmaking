@@ -42,24 +42,33 @@ def cmd_parser(event, context):
         surfix = random.randint(1,1000)
         for config in context['flexmatch']['configurations']:
           if config['active']:
-            print(f"======= Processing configuration: {config['name']} =======")
+            print(f"======= Processing flexmatch: {config['name']} =======")
             _infra = Infra(config, gamelift, sns, lambda_client, dynamodb, iam)
             _infra.matchmaking_configurations(notify, surfix)
+        pass
+
+    elif event == 'destroy':
+        for config in context['flexmatch']['configurations']:
+          if config['active']:
+             print(f"======= Processing destroy: {config['name']} =======")
+             _infra = Infra(config, gamelift, sns, lambda_client, dynamodb, iam)
+             _infra.destroy_resources()
+        pass
 
     elif event == 'sample':
         for config in context['flexmatch']['configurations']:
            if config['active']:
-                main_ticket.loadMatchMaking(config['name'])
+            main_ticket.loadMatchMaking(config['name'])
         main_ticket.samplePlayer(1, context['sample'])
         pass
 
     elif event == 'benchmark':
         for config in context['flexmatch']['configurations']:
            if config['active']:
-                main_ticket.loadMatchMaking(config['name'])
+            main_ticket.loadMatchMaking(config['name'])
         main_ticket.startMatchmaking(gamelift, dynamodb, notify, context['sample'], context['benchmark'])
         pass
-
+    
     else:
        print('nothing!!!')
        pass

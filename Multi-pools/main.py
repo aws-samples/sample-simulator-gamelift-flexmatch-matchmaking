@@ -31,6 +31,7 @@ def help():
     print("\t-flexmatch: Create configuration if not exist and Update configuration rulesets")
     print("\t-sample: sample json of a player")
     print("\t-benchmark: Start a benchmark")
+    print("\t-destroy: destroy resources")
 
 # Check if arguments are provided
 if len(sys.argv) > 1:
@@ -48,13 +49,14 @@ if len(sys.argv) > 1:
             if option == "print":
                 pprint(configJson)
                 pass
-            elif option in ['test', 'flexmatch', 'sample', 'benchmark']:
+            elif option in ['test', 'flexmatch', 'sample', 'benchmark', 'destroy']:
                 cmd_parser(option, configJson) 
                 pass
             else:
                 help()
         else:
-            print(f"Argument: {arg}")
+            print(f"Invalid Argument: {arg}")
+            help()
 else:
     print("No arguments provided.")
     help()
