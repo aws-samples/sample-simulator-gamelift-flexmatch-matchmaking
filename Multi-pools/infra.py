@@ -1,19 +1,15 @@
-"""
-Infrastructure deployment module for GameLift FlexMatch matchmaking system.
 
-This module handles the AWS infrastructure setup including:
-- Lambda function creation and configuration
-- IAM role management
-- GameLift matchmaking configurations
-- SNS topic creation and subscription management
-
-The Infra class provides methods to:
-- Create and manage Lambda execution roles
-- Deploy Lambda functions for matchmaking
-- Configure GameLift FlexMatch matchmaking rules
-- Set up SNS notification pipelines
-- Manage access policies and subscriptions
 """
+This module provides functionality for setting up and managing the infrastructure resources required for the matchmaking system.
+
+It includes the Infra class, which handles tasks such as:
+- Creating and updating GameLift matchmaking configurations and rulesets
+- Setting up and configuring AWS resources like SNS topics, Lambda functions, and DynamoDB tables
+- Destroying and cleaning up resources when needed
+
+The Infra class interacts with various AWS services like GameLift, SNS, Lambda, DynamoDB, and IAM to provision and manage the required infrastructure components.
+"""
+
 import json, os, time, random
 import boto3, sys
 
@@ -418,5 +414,4 @@ class Infra():
     except Exception as e:
       print(f"\tError creating table '{table_name}': {e}")
 
-    return table_name    
-    
+    return table_name

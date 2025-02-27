@@ -1,9 +1,18 @@
-# RealTicket class handles AWS GameLift matchmaking tickets by:
-# - Creating and managing matchmaking tickets
-# - Simulating player acceptance behavior
-# - Monitoring ticket status (completed/failed/pending)
-# - Collecting match statistics and timing data
-# - Supporting concurrent matchmaking requests
+
+
+"""
+This module provides the core functionality for managing matchmaking tickets and interacting with the GameLift service.
+
+It includes the RealTicket class, which handles tasks such as:
+- Generating mock player data
+- Starting matchmaking requests
+- Monitoring ticket status
+- Simulating match acceptance behavior
+- Storing and retrieving matchmaking data from DynamoDB
+- Calculating and printing matchmaking statistics
+
+The module also includes various helper methods for parsing configurations, generating random data, and handling time calculations.
+"""
 
 import json, os, random, time
 import string

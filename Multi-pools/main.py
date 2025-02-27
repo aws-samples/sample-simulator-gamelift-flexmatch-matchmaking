@@ -1,19 +1,8 @@
 
+
 """
-This module is the main entry point for the application.
-
-Functions:
-    help():
-        Prints the usage instructions and available options.
-
-Main Logic:
-    The main program logic parses the command-line arguments and executes the corresponding operations based on the provided options.
-    Available options:
-        -help: Show the usage instructions.
-        -print: Output the JSON configuration data.
-        -ruleset: Create or update matchmaking configurations and rulesets.
-        -sample: Generate a sample player JSON.
-        -benchmark: Start a matchmaking benchmark.
+Main entry point for the application.
+Handles command line arguments and executes corresponding actions.
 """
 
 from cmd_parser import cmd_parser
@@ -66,5 +55,3 @@ if len(sys.argv) > 1:
 else:
     print("No arguments provided.")
     help()
-
-

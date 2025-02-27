@@ -142,29 +142,57 @@ Options:
   -print: output json of all configurations
   -flexmatch: Create configuration if not exist and Update configuration rulesets
   -sample: sample json of a player
+  -destroy: destroy resources
   -benchmark: Start a benchmark
+  -result: Get the last benchmark result
 ```
 
 Examples:
 1. View help information:
-   ```
-   python main.py -help
-   ```
+  ```
+  python main.py -help
+  ```
 
 2. Update FlexMatch settings:
-   ```
-   python main.py -flexmatch
-   ```
+  ```
+  // use config file setting
+  python Multi-pools/main.py -flexmatch
+  // set notiy type
+  python Multi-pools/main.py -flexmatch=polling|lambda
+  ```
 
 3. Run benchmark test:
-   ```
-   python main.py -benchmark
-   ```
+  ```
+  // use config file setting
+  python Multi-pools/main.py -benchmark
+  // set custom players size 
+  python Multi-pools/main.py -benchmark=200
+  ```
+4. Get Last benchmark result:
+  ```
+  python Multi-pools/main.py -result
+  // set the benchmark id you want to retrieve
+  python Multi-pools/main.py -result=27
+  ```
 
-4. Run sample player:
-   ```
-   python main.py -sample
-   ```
+5. Run sample player:
+  ```
+  python Multi-pools/main.py -sample
+  ```
+
+6. Recycling/Destroy the resources:
+  ```
+  python Multi-pools/main.py -destroy
+  ```
+
+7. Chain the commands together
+  ```
+  // 1. destroy previous resource
+  // 2. build lambda based notification pipeline
+  // 3. bechmark with 200 players
+  // 4. get the result
+  python Multi-pools/main.py -destroy -flexmatch=lambda -benchmark=200 -result
+  ```
    
 ## Interpreting Benchmark Results (polling)
 
@@ -214,6 +242,8 @@ For example, if our configuration name is "Radiant-Dire-Classic", then the SNS n
 example result of benchmark
 
 ![ddb-data](./Multi-pools/static/ddb-data.png)
+
+and then use 'result' command to get the data!!
 
 ## Troubleshooting
 
