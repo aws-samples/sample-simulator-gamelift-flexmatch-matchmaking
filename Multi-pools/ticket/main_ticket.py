@@ -19,13 +19,13 @@ class MainTicket():
     for realticket in self.realtickets:
       realticket.doSampling(sampleNum, sample)
 
-  def startMatchmaking(self, gamelift, dynamodb, nofity, sample, benchmark):
+  def startMatchmaking(self, value, gamelift, dynamodb, nofity, sample, benchmark):
     threads = []
 
     for realticket in self.realtickets:
       thread = threading.Thread(
         target=realticket.doMatchmaking, 
-        args=(gamelift, dynamodb, nofity, sample, benchmark,))
+        args=(value, gamelift, dynamodb, nofity, sample, benchmark,))
       threads.append(thread)
       thread.start()
 
@@ -33,9 +33,9 @@ class MainTicket():
     for thread in threads:
       thread.join()
 
-  def getMatchmakingResult(self, dynamodb, benchmark):
+  def getMatchmakingResult(self, value, dynamodb, notify, benchmark):
     for realticket in self.realtickets:
-      realticket.lambdaResult(dynamodb, benchmark)
+      realticket.lambdaResult(value, dynamodb, notify, benchmark)
 
 main_ticket = MainTicket()
 

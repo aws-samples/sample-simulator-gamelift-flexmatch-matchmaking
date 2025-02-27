@@ -160,17 +160,26 @@ class RealTicket():
       print(f"Error during monitoring: {e}")
     pass
 
-  def lambdaResult(self, dynamodb, benchmark):
+  def lambdaResult(self, value, dynamodb, notify, benchmark):
+    print(f"\tnotify type '{notify}'")
+    if notify != "lambda":
+      return
+    
     self.dynamodb = dynamodb
     self.logs = benchmark['logs']
 
     tableName = getTempDb('dynamodb', 'table') 
-    _, self.lastbenchmarkId = incremental_read()
+    _, self.lastbenchmarkId = incremental_read() if value is None else (None, str(value).zfill(4))
     self.ticketPrefix =benchmark['ticketPrefix']
     keyprefix = f'{self.ticketPrefix}-{self.lastbenchmarkId}-'
 
+    existing_tables = self.dynamodb.tables.all()
+    existing_table_names = [table.name for table in existing_tables]
+    if not tableName in existing_table_names:
+      print(f"\tTable '{tableName}' not exists.")
+      return 
+        
     print(f'\ttable name {tableName}, ticket prefix: {keyprefix}')
-
     wrapper = PartiQLWrapper(self.dynamodb)
 
     output = wrapper.run_partiql(
@@ -261,10 +270,12 @@ class RealTicket():
       sample_player['PlayerAttributes']['GameMode'] = {'SL' : gameModes}
     print(self.players)
 
-  def doMatchmaking(self, gamelift, dynamodb, notify, sample, benchmark):
+  def doMatchmaking(self, value, gamelift, dynamodb, notify, sample, benchmark):
     self.gamelift = gamelift
     self.dynamodb = dynamodb
     self._parseBenchmarkConfig(sample, benchmark)
+    if not value is None:
+      self.totalPlayers = int(value)
     self.mockPlayers(self.totalPlayers)
 
     sub_players = split_array(self.players, self.teamSize['default'])

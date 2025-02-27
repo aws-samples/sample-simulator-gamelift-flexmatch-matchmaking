@@ -41,7 +41,12 @@ if len(sys.argv) > 1:
         # Check if argument starts with "-", indicating it's an option
         if arg.startswith("-"):
             # Get option name by removing "-" prefix
-            option = arg[1:]
+            option_str = arg[1:]
+            option_arr = option_str.split("=", maxsplit=1)
+            # print(option_arr)
+            option =  None if len(option_arr) == 0 else option_arr[0]
+            value = None if len(option_arr) == 1 else option_arr[1]
+
             configJson = read_json_file(f"{os.getcwd()}/Multi-pools/Configs/config.json")
             if configJson is None:
                 print("No config.json found.")
@@ -51,7 +56,7 @@ if len(sys.argv) > 1:
                 pprint(configJson)
                 pass
             elif option in ['test', 'flexmatch', 'sample', 'benchmark', 'result', 'destroy']:
-                cmd_parser(option, configJson) 
+                cmd_parser(option, value, configJson) 
                 pass
             else:
                 help()

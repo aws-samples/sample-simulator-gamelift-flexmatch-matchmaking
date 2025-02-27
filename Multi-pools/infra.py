@@ -44,8 +44,14 @@ append_policy = {
 
 class Infra():
 
-  def __init__(self, config, gamelift, sns, lambda_client, dynamodb, iam):
+  def __init__(self, config, value, gamelift, sns, lambda_client, dynamodb, iam):
     self.config = config
+    self.value = value
+    if not self.value is None and self.value not in ['lambda', 'polling']:
+       raise ValueError(f"Invalid value: {self.value}")
+    if not self.value is None:
+      self.config['notify'] = value
+
     self.gamelift = gamelift
     self.sns = sns
     self.lambda_client = lambda_client
@@ -119,6 +125,8 @@ class Infra():
     pass
 
   def matchmaking_configurations(self, notify, surffix):
+    if not self.value is None:
+       notify = str(self.value)
     # Check if configuration already exists
     if not self.config.get('ruleset') or not self.config.get('name'):
         print(f"\tMissing required parameters in config: {self.config}")

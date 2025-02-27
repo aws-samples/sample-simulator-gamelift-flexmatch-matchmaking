@@ -21,7 +21,7 @@ from ticket import main_ticket
 from ticket.helpers import read_json_file
 from infra import Infra
 
-def cmd_parser(event, context):
+def cmd_parser(option, value, context):
 
     gamelift = boto3.client('gamelift', region_name=context['aws']['region'])
     sns = boto3.client('sns', region_name=context['aws']['region'])
@@ -31,10 +31,10 @@ def cmd_parser(event, context):
 
     notify = context['notify'] # polling | notification
 
-    if event is None:
+    if option is None:
         pass
-    
-    elif event == 'flexmatch':
+
+    elif option == 'flexmatch':
         if not context.get('flexmatch') or not context['flexmatch'].get('configurations'):
             print("Missing required flexmatch configurations in context")
             raise ValueError("Invalid context structure")
@@ -43,37 +43,37 @@ def cmd_parser(event, context):
         for config in context['flexmatch']['configurations']:
           if config['active']:
             print(f"======= Processing flexmatch: {config['name']} =======")
-            _infra = Infra(config, gamelift, sns, lambda_client, dynamodb, iam)
+            _infra = Infra(config, value, gamelift, sns, lambda_client, dynamodb, iam)
             _infra.matchmaking_configurations(notify, surfix)
         pass
 
-    elif event == 'destroy':
+    elif option == 'destroy':
         for config in context['flexmatch']['configurations']:
           if config['active']:
              print(f"======= Processing destroy: {config['name']} =======")
-             _infra = Infra(config, gamelift, sns, lambda_client, dynamodb, iam)
+             _infra = Infra(config, value, gamelift, sns, lambda_client, dynamodb, iam)
              _infra.destroy_resources()
         pass
 
-    elif event == 'sample':
+    elif option == 'sample':
         for config in context['flexmatch']['configurations']:
            if config['active']:
             main_ticket.loadMatchMaking(config['name'])
         main_ticket.samplePlayer(1, context['sample'])
         pass
 
-    elif event == 'benchmark':
+    elif option == 'benchmark':
         for config in context['flexmatch']['configurations']:
            if config['active']:
             main_ticket.loadMatchMaking(config['name'])
-        main_ticket.startMatchmaking(gamelift, dynamodb, notify, context['sample'], context['benchmark'])
+        main_ticket.startMatchmaking(value, gamelift, dynamodb, notify, context['sample'], context['benchmark'])
         pass
     
-    elif event == 'result':
+    elif option == 'result':
         for config in context['flexmatch']['configurations']:
            if config['active']:
             main_ticket.loadMatchMaking(config['name'])
-        main_ticket.getMatchmakingResult(dynamodb, context['benchmark'])
+        main_ticket.getMatchmakingResult(value, dynamodb, notify, context['benchmark'])
         pass
 
     else:
