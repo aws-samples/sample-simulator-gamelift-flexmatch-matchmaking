@@ -1,9 +1,0 @@
-[dynamodb]
-table = Radiant-Dire-Classic-1-ddb-467
-
-[benchmark]
-id = 3
-
-[resources]
-arns = ["arn:aws:gamelift:us-east-1:614954710407:matchmakingruleset/RadiantDire-Classic-1-467", "arn:aws:sns:us-east-1:614954710407:Radiant-Dire-Classic-1-sns", "arn:aws:iam::614954710407:role/Radiant-Dire-Classic-1-lambda-role", "arn:aws:lambda:us-east-1:614954710407:function:Radiant-Dire-Classic-1-lambda", "arn:aws:dynamodb:us-east-1:614954710407:table/Radiant-Dire-Classic-1-ddb-467", "arn:aws:gamelift:us-east-1:614954710407:matchmakingconfiguration/Radiant-Dire-Classic-1"]
-

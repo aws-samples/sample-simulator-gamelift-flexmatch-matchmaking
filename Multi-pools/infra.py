@@ -74,7 +74,7 @@ class Infra():
             Name=arn
           )
           pass
-        elif 'arn:aws:gamelift' in arn and 'matchmakingconfiguratio' in arn:
+        elif 'arn:aws:gamelift' in arn and 'matchmakingconfiguration' in arn:
           response = self.gamelift.delete_matchmaking_configuration(
             Name=arn
           )
@@ -268,8 +268,9 @@ class Infra():
           RuleSetBody=json.dumps(rulesetJson),
           Tags = self.tags
         )
-        print(f"\tCreated new ruleset: {rulesetName}")
-        self.arns.append(response['RuleSet']['RuleSetArn'])
+        ruleset_arn = response['RuleSet']['RuleSetArn']
+        print(f"\tCreated new ruleset: {rulesetName} arn: {ruleset_arn}")
+        self.arns.append(ruleset_arn)
     except Exception as e:
         print(f"Error during monitoring: {e}")
         return ""

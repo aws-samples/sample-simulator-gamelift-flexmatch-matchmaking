@@ -6,7 +6,7 @@ import numpy as np
 import configparser
 from datetime import datetime
 
-TempDbFilePath = f'{os.getcwd()}/Multi-pools/tempdb'
+TempDbFilePath = f'{os.getcwd()}/Multi-pools/tempdb.ini'
 TempDbParser = configparser.ConfigParser()
 
 def getTempDb(sectionName, keyName):
