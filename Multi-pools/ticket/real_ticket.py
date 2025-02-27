@@ -83,7 +83,9 @@ class RealTicket():
     """Handle the status of a matchmaking ticket"""
     status = ticket['Status']
     # Handle other statuses
-    print(f"{ticket['ConfigurationName']} - {ticket_id} - {status} - {len(ticket['Players'])} - {ticket['StartTime']}")
+    dt = datetime.strptime(str(ticket['StartTime']), "%Y-%m-%d %H:%M:%S.%f%z")
+    formatted_time = dt.strftime("%Y-%m-%d %H:%M:%S")
+    print(f"{ticket['ConfigurationName']} - {ticket_id} - {status} - {len(ticket['Players'])} - {formatted_time}")
 
     # Handle tickets requiring acceptance
     if status == 'REQUIRES_ACCEPTANCE':
@@ -117,7 +119,7 @@ class RealTicket():
       print(f"{ticket['ConfigurationName']} - {ticket_id} - {status} - {elapsed_time}")
       return
 
-  def monitorTask(self):
+  def monitorTask(self, notify):
     try:
       while True:
         # Monitor each active ticket
@@ -162,20 +164,11 @@ class RealTicket():
     self.dynamodb = dynamodb
     self.logs = benchmark['logs']
 
-    logfilePath = f"{os.getcwd()}/ddb"
-    tableName = None
-    with open(logfilePath, 'r') as outputfile:
-      tableName = outputfile.read().rstrip('\n')
-    if not tableName:
-      return 
-    
-    benchmarkFilePath = f"{os.getcwd()}/benchmark"
-    with open(benchmarkFilePath, 'r+') as f:
-      lastbenchmarkId = int(f.read().strip())
-    self.lastbenchmarkId = str(lastbenchmarkId).zfill(4)
-   
+    tableName = getTempDb('dynamodb', 'table') 
+    _, self.lastbenchmarkId = incremental_read()
     self.ticketPrefix =benchmark['ticketPrefix']
     keyprefix = f'{self.ticketPrefix}-{self.lastbenchmarkId}-'
+
     print(f'\ttable name {tableName}, ticket prefix: {keyprefix}')
 
     wrapper = PartiQLWrapper(self.dynamodb)
@@ -282,27 +275,15 @@ class RealTicket():
     print(f"\nStarting matchmaking for {self.machmakingConfigurationName}, notify type {notify}")
     print(f"Total players: {self.totalPlayers}, Batches: {total_batches}")
 
-    if notify == 'polling':
-      # monitor the tickets
-      monitor_thread = threading.Thread(target=self.monitorTask, args=())
-      monitor_thread.start()
-    elif notify == 'lambda':
-      monitor_thread = threading.Thread(target=self.monitorTask, args=())
-      monitor_thread.start()   
-      pass
-    else:
-      pass
+    # start monitor thread
+    monitor_thread = threading.Thread(target=self.monitorTask, args=(notify,))
+    monitor_thread.start() 
 
     self.start_time = datetime.now()
     try:
-      benchmarkFilePath = f"{os.getcwd()}/benchmark"
-      flag = 0
-      if notify == 'lambda':
-        flag = 1
-      benchmarkId, lastbenchmarkId = incremental_read(benchmarkFilePath, flag)
-      self.benchmarkId = str(benchmarkId).zfill(4)
-      self.lastbenchmarkId = str(lastbenchmarkId).zfill(4)
 
+      step = 1 if notify == 'lambda' else 0
+      self.benchmarkId, self.lastbenchmarkId = incremental_read(step)
       print(f'\n\t current bechmark id: {self.benchmarkId} \t notify type: {notify}')
 
       for index, batch_players in enumerate(sub_players, 1):
@@ -327,9 +308,6 @@ class RealTicket():
         #print(f'sleep {sleepTime} seconds')
         time.sleep(sleepTime)
 
-      # if nofity == 'lambda':
-      #   logfilePath = f"{os.getcwd()}/ddb"
-      #   self.lambdaMonitor(logfilePath)
     except Exception as e:
       print(f"\nError during matchmaking: {str(e)}")
     finally:

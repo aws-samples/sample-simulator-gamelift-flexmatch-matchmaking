@@ -21,3 +21,4 @@ numpy==1.23.5
 
 nose=1.3.7
 scaffold=0.1.3
+configparser=7.1.0

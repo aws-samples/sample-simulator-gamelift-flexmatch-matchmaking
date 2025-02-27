@@ -3,8 +3,24 @@ import string
 import uuid
 import boto3
 import numpy as np
-
+import configparser
 from datetime import datetime
+
+TempDbFilePath = f'{os.getcwd()}/Multi-pools/tempdb'
+TempDbParser = configparser.ConfigParser()
+
+def getTempDb(sectionName, keyName):
+   TempDbParser.read(TempDbFilePath)
+   return TempDbParser.get(sectionName, keyName)
+
+def wrtieTempDb(sectionName, keyName, values):
+   TempDbParser.read(TempDbFilePath)
+   TempDbParser.set(sectionName, keyName, values)
+   flushTempDb()
+
+def flushTempDb():
+   with open(TempDbFilePath, 'w') as configfile:
+    TempDbParser.write(configfile)
 
 def generate_scores(num_players, median=1000, std_dev=400):
     scores = np.random.normal(loc=median, scale=std_dev, size=num_players)
@@ -71,19 +87,9 @@ def read_json_file(file_path):
 
 # Check if the benchmarkFilePath exists. If it doesn't exist, create it and write 1 to it. If it exists, read the value inside, 
 # increment it by 1, and then overwrite the source file with the new value.
-def incremental_read(benchmarkFilePath, flag=0):
-  lastbenchmarkId = 0
-  benchmarkId = 1
-  if not os.path.exists(benchmarkFilePath):
-      with open(benchmarkFilePath, 'w') as f:
-        f.write('1')
-        benchmarkId = 1
-  else:
-    with open(benchmarkFilePath, 'r+') as f:
-      lastbenchmarkId = int(f.read().strip())
-      benchmarkId = lastbenchmarkId + flag
-      f.seek(0)
-      f.write(str(benchmarkId))
-      f.truncate()
-  return benchmarkId, lastbenchmarkId
+def incremental_read(step=0):
+  lastbenchmarkId = int(getTempDb("benchmark", "id"))
+  benchmarkId = lastbenchmarkId + step
+  wrtieTempDb("benchmark", "id", str(benchmarkId))
+  return str(benchmarkId).zfill(4), str(lastbenchmarkId).zfill(4)
 

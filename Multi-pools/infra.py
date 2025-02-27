@@ -18,7 +18,7 @@ import json, os, time, random
 import boto3, sys
 
 from ticket import main_ticket
-from ticket.helpers import read_json_file
+from ticket.helpers import read_json_file, getTempDb, wrtieTempDb
 
 policy_document = {
     "Version": "2012-10-17",
@@ -61,14 +61,9 @@ class Infra():
     self.arns = []
     pass
   
-  def destroy_resources(self):
-    arnFile = f"{os.getcwd()}/arn"
-    with open(arnFile, 'r') as inputfile:
-      for line in inputfile:
-        arn = line.strip()
-        if arn:
-          self.arns.append(arn)
-
+  def destroy_resources(self):  
+    arns_str =getTempDb("resources", "arns")
+    self.arns = json.loads(arns_str)
     unique_arn_list = list(set(self.arns))
     # print(unique_arn_list)
     for arn in unique_arn_list:
@@ -119,14 +114,8 @@ class Infra():
     pass
 
   def store_resources(self):
-    arnFile = f"{os.getcwd()}/arn"
-    if os.path.exists(arnFile):
-       # remove file
-       os.remove(arnFile)
-
-    with open(arnFile, 'a') as outputfile:
-      for arn in self.arns:
-        print(f"{arn}", file=outputfile)
+    arns_str = json.dumps(self.arns)
+    wrtieTempDb('resources', 'arns', arns_str)
     pass
 
   def matchmaking_configurations(self, notify, surffix):
@@ -356,9 +345,8 @@ class Infra():
           self.sns_update_policy(topic_arn, configure_arn)
 
           table_name = self.create_dynamodb_table(f'{self.config["name"]}-ddb-{self.surffix}', 'ticket_id', 'ticket_event')
-          ddb_file = f"{os.getcwd()}/ddb"
-          with open(ddb_file, 'w') as outputfile:
-            print(f"{table_name}", file=outputfile)
+
+          wrtieTempDb('dynamodb', 'table', table_name)
 
           self.gamelift.update_matchmaking_configuration(
               Name = self.config['name'],
@@ -368,12 +356,8 @@ class Infra():
     pass
 
   def create_dynamodb_table(self, table_name, partition_key, sort_key=None):
-    ddb_file = f"{os.getcwd()}/ddb"
-    ddb_talbe = ""
-    with open(ddb_file, 'r') as outputfile:
-      ddb_talbe = outputfile.readline().strip()
+    ddb_talbe = getTempDb('dynamodb', 'table')
 
-    # table_name = f'{table_name}-ddb-{self.surffix}'
     existing_tables = self.dynamodb.tables.all()
     existing_table_names = [table.name for table in existing_tables]
     if table_name in existing_table_names:
