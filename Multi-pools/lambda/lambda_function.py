@@ -67,11 +67,17 @@ def batch_put_item(customEventData, tickets, matchevent_time, matchevent_status)
 def lambda_handler(event, context):
 
     sns_message = json.loads(event['Records'][0]['Sns']['Message'])
-    matchevent_status = sns_message['detail']['type']
+    print(sns_message)
+    if not'customEventData' in sns_message['detail']:
+      return {
+        'statusCode': 200,
+        'body': json.dumps('not found customEventData!')
+      }
+
+    matchevent_status = sns_message['detail']['type']   
     customEventData = sns_message['detail']['customEventData']
     matchevent_time = sns_message['time']
-    print(sns_message)
-    print(matchevent_status)
+    print(matchevent_status, customEventData, matchevent_time)
 
     if matchevent_status in ['MatchmakingSucceeded', 'AcceptMatchCompleted', 'MatchmakingFailed', 'MatchmakingCancelled', 'MatchmakingTimedOut']:
       batch_put_item(customEventData, sns_message['detail']['tickets'], matchevent_time, matchevent_status)
@@ -82,6 +88,6 @@ def lambda_handler(event, context):
     
     return {
         'statusCode': 200,
-        'body': json.dumps('Hello from Lambda!')
+        'body': json.dumps('ok!')
     }
 

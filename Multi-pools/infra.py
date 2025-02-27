@@ -137,7 +137,8 @@ class Infra():
     response = {}
     configure_arn = ""
     AcceptanceRequired = True if self.config['acceptance'] > 0 else False
-    CustomEventData = f'{self.config["name"]}-ddb-{self.surffix}' if notify == "lambda" else ''
+    _customEventData = f'{self.config["name"]}-ddb-{self.surffix}' if notify == "lambda" else ''
+    print(_customEventData)
     AcceptanceTimeoutSeconds = self.config['acceptance']  if self.config['acceptance'] > 0 else 1
     try:
         self.create_matchmaking_rule_set(rulesetName)
@@ -156,7 +157,7 @@ class Infra():
             AcceptanceRequired=AcceptanceRequired,
             AcceptanceTimeoutSeconds=AcceptanceTimeoutSeconds,
             RuleSetName=rulesetName,
-            CustomEventData=CustomEventData
+            CustomEventData=_customEventData
         )
         configure_arn = response['Configuration']['ConfigurationArn']
         print(f"\tUpdated matchmaking configuration: {self.config['name']} with new ruleset: {rulesetName}")
@@ -172,7 +173,7 @@ class Infra():
           AcceptanceTimeoutSeconds=AcceptanceTimeoutSeconds,
           RequestTimeoutSeconds=120,
           RuleSetName=rulesetName,
-          CustomEventData=CustomEventData,
+          CustomEventData=_customEventData,
           Tags = self.tags
         )
         print(f"\tCreated matchmaking configuration: {self.config['name']}")

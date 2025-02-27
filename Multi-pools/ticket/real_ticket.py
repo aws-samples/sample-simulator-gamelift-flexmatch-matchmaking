@@ -286,6 +286,10 @@ class RealTicket():
     print(f"\nStarting matchmaking for {self.machmakingConfigurationName}, notify type {notify}")
     print(f"Total players: {self.totalPlayers}, Batches: {total_batches}")
 
+    # response = self.gamelift.describe_matchmaking_configurations(Names=[self.machmakingConfigurationName])
+    # print(response)
+    # return 
+
     # start monitor thread
     monitor_thread = threading.Thread(target=self.monitorTask, args=(notify,))
     monitor_thread.start() 
