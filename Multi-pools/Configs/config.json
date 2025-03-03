@@ -18,7 +18,7 @@
     },{
       "name": "Radiant-Dire-Classic-1",
       "active": true,
-      "acceptance": 15,
+      "acceptance": 20,
       "ruleset":"RadiantDire-Classic-1"
     },{
       "name": "Radiant-Dire-All",
@@ -35,8 +35,8 @@
         "std_dev": 20
       },
       "skill": {
-        "median": 2000,
-        "std_dev": 400
+        "median": 1000,
+        "std_dev": 200
       },
       "GameMode":{
         

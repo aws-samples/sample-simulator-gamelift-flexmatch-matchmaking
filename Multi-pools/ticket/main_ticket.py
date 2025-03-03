@@ -12,8 +12,14 @@ class MainTicket():
     RealTicket().call()
 
   def loadMatchMaking(self, configuartionName):
-    print(f'Load {configuartionName} matchmaker.')
-    self.realtickets.append(RealTicket(configuartionName))
+    skip = False
+    for realticket in self.realtickets:
+      if realticket.machmakingConfigurationName == configuartionName:
+        print(f'Already loaded {configuartionName} matchmaker.')
+        skip = True
+    if not skip:
+      print(f'Load {configuartionName} matchmaker.')
+      self.realtickets.append(RealTicket(configuartionName))
 
   def samplePlayer(self, sampleNum, sample):
     for realticket in self.realtickets:
